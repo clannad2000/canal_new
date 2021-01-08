@@ -1,0 +1,66 @@
+dataSourceKey: tyredb
+destination: example
+groupId: g3
+esMapping:
+  _index: tyredb-s_garage
+  _type: _doc
+  _id: _id
+  main: true
+  upsert: true
+  properties:
+    _id:
+      column: garage_id
+    garageId:
+      column: garage_id
+    tel:
+      column: tel
+    cardNumber:
+      column: card_number
+    headUrl:
+      column: head_url
+    licenseUrl:
+      column: license_url
+    address:
+      column: pro_name, city_name, area_name, detailed
+      handler: concat
+    areaNumber:
+      column: area_number
+    cityNumber:
+      column: city_number
+    proNumber:
+      column: pro_number
+    lng:
+      column: lng
+    lat:
+      column: lat
+    location:
+      column: lat, lng
+      handler: geo_point
+    userName:
+      column: user_name
+    company:
+      column: company
+    mainProducts:
+      column: main_products
+    level:
+      column: level
+    remark:
+      column: remark
+    contact:
+      column: contact
+    car:
+      column: car
+      handler: array
+    truck:
+      column: truck
+      handler: array
+    carName:
+      column: car_name
+    truckName:
+      column: truck_name
+    brand:
+      column: car_name, truck_name
+      handler: array
+  tableName: s_garage
+  #    etlCondition: "where a.c_time>='{0}'"
+  commitBatch: 3000

@@ -1,6 +1,7 @@
 package com.alibaba.otter.canal.deployer;
 
 import java.io.FileInputStream;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -41,7 +42,7 @@ public class CanalLauncher {
             Properties properties = new Properties();
             if (conf.startsWith(CLASSPATH_URL_PREFIX)) {
                 conf = StringUtils.substringAfter(conf, CLASSPATH_URL_PREFIX);
-                properties.load(CanalLauncher.class.getClassLoader().getResourceAsStream(conf));
+                properties.load(Objects.requireNonNull(CanalLauncher.class.getClassLoader().getResourceAsStream(conf)));
             } else {
                 properties.load(new FileInputStream(conf));
             }
@@ -75,7 +76,7 @@ public class CanalLauncher {
                 Properties managerProperties = canalConfig.getProperties();
                 // merge local
                 managerProperties.putAll(properties);
-                int scanIntervalInSecond = Integer.valueOf(CanalController.getProperty(managerProperties,
+                int scanIntervalInSecond = Integer.parseInt(CanalController.getProperty(managerProperties,
                     CanalConstants.CANAL_AUTO_SCAN_INTERVAL,
                     "5"));
                 executor.scheduleWithFixedDelay(new Runnable() {

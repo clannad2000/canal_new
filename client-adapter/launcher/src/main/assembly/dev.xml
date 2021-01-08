@@ -44,6 +44,13 @@
             </includes>
         </fileSet>
         <fileSet>
+            <directory>../es/src/main/resources/es</directory>
+            <outputDirectory>/conf/es</outputDirectory>
+            <includes>
+                <include>**/*</include>
+            </includes>
+        </fileSet>
+        <fileSet>
             <directory>../hbase/src/main/resources/hbase</directory>
             <outputDirectory>/conf/hbase</outputDirectory>
             <includes>
@@ -53,6 +60,13 @@
         <fileSet>
             <directory>../kudu/src/main/resources/kudu</directory>
             <outputDirectory>/conf/kudu</outputDirectory>
+            <includes>
+                <include>**/*</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>../redis/src/main/resources/redis</directory>
+            <outputDirectory>/conf/redis</outputDirectory>
             <includes>
                 <include>**/*</include>
             </includes>

@@ -10,11 +10,16 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.alibaba.otter</groupId>
-    <artifactId>client-adapter.es7x</artifactId>
+    <artifactId>client-adapter.es</artifactId>
     <packaging>jar</packaging>
-    <name>canal client adapter es v7x module for otter ${project.version}</name>
+    <name>canal client adapter es module for otter ${project.version}</name>
 
     <dependencies>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.8.6</version>
+        </dependency>
         <dependency>
             <groupId>com.alibaba.otter</groupId>
             <artifactId>client-adapter.common</artifactId>
@@ -22,9 +27,25 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.alibaba.otter</groupId>
-            <artifactId>client-adapter.escore</artifactId>
-            <version>${project.version}</version>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.elasticsearch</groupId>
@@ -48,9 +69,9 @@
         </dependency>
 
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.16</version>
         </dependency>
     </dependencies>
 
@@ -85,8 +106,8 @@
                         </goals>
                         <configuration>
                             <tasks>
-                                <copy todir="${project.basedir}/../launcher/target/classes/es7" overwrite="true">
-                                    <fileset dir="${project.basedir}/target/classes/es7" erroronmissingdir="true">
+                                <copy todir="${project.basedir}/../launcher/target/classes/es" overwrite="true">
+                                    <fileset dir="${project.basedir}/target/classes/es" erroronmissingdir="true">
                                         <include name="*.yml" />
                                     </fileset>
                                 </copy>

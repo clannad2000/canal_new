@@ -1,10 +1,11 @@
-package com.alibaba.otter.canal.client.adapter.es.core.monitor;
+package com.alibaba.otter.canal.client.adapter.es.monitor;
 
 import java.io.File;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Properties;
 
+import com.alibaba.otter.canal.client.adapter.es.ES7xAdapter;
+import com.alibaba.otter.canal.client.adapter.es.config.ESSyncConfig;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
 import org.apache.commons.io.monitor.FileAlterationMonitor;
@@ -13,8 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.alibaba.otter.canal.client.adapter.config.YmlConfigBinder;
-import com.alibaba.otter.canal.client.adapter.es.core.ESAdapter;
-import com.alibaba.otter.canal.client.adapter.es.core.config.ESSyncConfig;
 import com.alibaba.otter.canal.client.adapter.support.MappingConfigsLoader;
 import com.alibaba.otter.canal.client.adapter.support.Util;
 
@@ -24,13 +23,13 @@ public class ESConfigMonitor {
 
     private String                adapterName;
 
-    private ESAdapter             esAdapter;
+    private ES7xAdapter esAdapter;
 
     private Properties            envProperties;
 
     private FileAlterationMonitor fileMonitor;
 
-    public void init(ESAdapter esAdapter, Properties envProperties) {
+    public void init(ES7xAdapter esAdapter, Properties envProperties) {
         this.esAdapter = esAdapter;
         this.envProperties = envProperties;
         this.adapterName = envProperties.getProperty("es.version");
@@ -136,7 +135,12 @@ public class ESConfigMonitor {
 
         private void deleteConfigFromCache(File file) {
             esAdapter.getEsSyncConfig().remove(file.getName());
-            esAdapter.getDbTableEsSyncConfig().values().stream().filter(Objects::nonNull).forEach(configMap -> configMap.remove(file.getName()));
+            for (Map<String, ESSyncConfig> configMap : esAdapter.getDbTableEsSyncConfig().values()) {
+                if (configMap != null) {
+                    configMap.remove(file.getName());
+                }
+            }
+
         }
     }
 }

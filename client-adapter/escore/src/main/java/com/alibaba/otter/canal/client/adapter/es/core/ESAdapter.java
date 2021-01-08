@@ -68,12 +68,7 @@ public abstract class ESAdapter implements OuterAdapter {
                 }
             });
 
-            for (Map.Entry<String, ESSyncConfig> entry : esSyncConfig.entrySet()) {
-                String configName = entry.getKey();
-                ESSyncConfig config = entry.getValue();
-
-                addSyncConfigToCache(configName, config);
-            }
+            esSyncConfig.forEach(this::addSyncConfigToCache);
 
             esSyncService = new ESSyncService(esTemplate);
 

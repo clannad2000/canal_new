@@ -100,11 +100,11 @@ public class CanalController {
         // 准备canal server
         ip = getProperty(properties, CanalConstants.CANAL_IP);
         registerIp = getProperty(properties, CanalConstants.CANAL_REGISTER_IP);
-        port = Integer.valueOf(getProperty(properties, CanalConstants.CANAL_PORT, "11111"));
-        adminPort = Integer.valueOf(getProperty(properties, CanalConstants.CANAL_ADMIN_PORT, "11110"));
+        port = Integer.parseInt(getProperty(properties, CanalConstants.CANAL_PORT, "11111"));
+        adminPort = Integer.parseInt(getProperty(properties, CanalConstants.CANAL_ADMIN_PORT, "11110"));
         embededCanalServer = CanalServerWithEmbedded.instance();
         embededCanalServer.setCanalInstanceGenerator(instanceGenerator);// 设置自定义的instanceGenerator
-        int metricsPort = Integer.valueOf(getProperty(properties, CanalConstants.CANAL_METRICS_PULL_PORT, "11112"));
+        int metricsPort = Integer.parseInt(getProperty(properties, CanalConstants.CANAL_METRICS_PULL_PORT, "11112"));
         embededCanalServer.setMetricsPort(metricsPort);
 
         this.adminUser = getProperty(properties, CanalConstants.CANAL_ADMIN_USER);
@@ -295,7 +295,7 @@ public class CanalController {
             };
 
             instanceConfigMonitors = MigrateMap.makeComputingMap(mode -> {
-                int scanInterval = Integer.valueOf(getProperty(properties,
+                int scanInterval = Integer.parseInt(getProperty(properties,
                     CanalConstants.CANAL_AUTO_SCAN_INTERVAL,
                     "5"));
 

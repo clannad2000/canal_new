@@ -1,5 +1,5 @@
 server:
-  port: 8081
+  port: 9999
 spring:
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
@@ -17,7 +17,7 @@ canal.conf:
   secretKey:
   consumerProperties:
     # canal tcp consumer
-    canal.tcp.server.host: 127.0.0.1:11111
+    canal.tcp.server.host: 192.168.2.120:11111
     canal.tcp.zookeeper.hosts:
     canal.tcp.batch.size: 500
     canal.tcp.username:
@@ -46,17 +46,47 @@ canal.conf:
     rabbitmq.password:
     rabbitmq.resource.ownerId:
 
-#  srcDataSources:
-#    defaultDS:
-#      url: jdbc:mysql://127.0.0.1:3306/mytest?useUnicode=true
-#      username: root
-#      password: 121212
+  srcDataSources:
+    defaultDS:
+      url: jdbc:mysql://192.168.2.175:3306/logistics?useUnicode=true
+      username: canal
+      password: szyg12345678
+    tmsdb:
+      url: jdbc:mysql://192.168.2.175:3306/tmsdb?useUnicode=true
+      username: canal
+      password: szyg12345678
+    addrdb:
+      url: jdbc:mysql://192.168.2.175:3306/addrdb?useUnicode=true
+      username: canal
+      password: szyg12345678
+    tyredb:
+      url: jdbc:mysql://192.168.2.175:3306/tyredb?useUnicode=true
+      username: canal
+      password: szyg12345678
+
   canalAdapters:
-  - instance: example # canal instance Name or mq topic name
-    groups:
-    - groupId: g1
-      outerAdapters:
-      - name: logger
+    - instance: example # canal instance Name or mq topic name
+      groups:
+        - groupId: g3
+          outerAdapters:
+            - name: logger
+            - name: es
+              #es服务器列表
+              hosts: 192.168.2.120:9200 # 127.0.0.1:9200 for rest mode
+              properties:
+                mode: rest # or rest
+                # security.auth: test:123456 #  only used for rest mode
+                #es集群名称
+                cluster.name: docker-cluster
+            - name: es7
+              #es服务器列表
+              hosts: 192.168.2.120:9200 # 127.0.0.1:9200 for rest mode
+              properties:
+                mode: rest # or rest
+                # security.auth: test:123456 #  only used for rest mode
+                #es集群名称
+                cluster.name: docker-cluster
+
 #      - name: rdb
 #        key: mysql1
 #        properties:
@@ -95,3 +125,33 @@ canal.conf:
 #          key: kudu
 #          properties:
 #            kudu.master.address: 127.0.0.1 # ',' split multi address
+
+
+
+
+
+#server:
+#  port: 9999
+#spring:
+#  jackson:
+#    date-format: yyyy-MM-dd HH:mm:ss
+#    time-zone: GMT+8
+#    default-property-inclusion: non_null
+#canal.conf:
+#  mode: tcp # kafka rocketMQ
+#  #canal服务器host
+#  canalServerHost: 192.168.2.120:11111
+#  #canalServerHost: 127.0.0.1:11111
+#  #zookeeperHosts: 192.168.2.171:2181,192.168.2.174:2181,192.168.2.175:2181
+#  #  mqServers: 127.0.0.1:9092 #or rocketmq
+#  #  flatMessage: true
+#  batchSize: 500
+#  syncBatchSize: 1000
+#  retries: 0
+#  timeout:
+#  accessKey:
+#  secretKey:
+#  username:
+#  password:
+#  vhost:
+
