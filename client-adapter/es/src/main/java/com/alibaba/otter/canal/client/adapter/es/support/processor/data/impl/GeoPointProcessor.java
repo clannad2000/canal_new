@@ -1,8 +1,8 @@
-package com.alibaba.otter.canal.client.adapter.es.support.handler.impl;
+package com.alibaba.otter.canal.client.adapter.es.support.processor.data.impl;
 
 import com.alibaba.otter.canal.client.adapter.es.config.ESSyncConfig;
 import com.alibaba.otter.canal.client.adapter.es.support.ESSyncUtil;
-import com.alibaba.otter.canal.client.adapter.es.support.handler.DataMappingHandler;
+import com.alibaba.otter.canal.client.adapter.es.support.processor.data.DataMappingProcessor;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,10 +13,10 @@ import java.util.Map;
  * @Date 2020/12/21
  * @Version1.0
  */
-public class GeoPointHandler implements DataMappingHandler {
+public class GeoPointProcessor implements DataMappingProcessor {
 
     @Override
-    public Object handle(Map<String, Object> sourceData, ESSyncConfig.ESMapping.FieldMapping fieldMapping) {
+    public Object dispose(Map<String, Object> sourceData, ESSyncConfig.ESMapping.FieldMapping fieldMapping) {
         String[] pointFiled = ESSyncUtil.strToArray(fieldMapping.getColumn());
         Map<String, Double> location = new HashMap<>();
         Object lat = sourceData.get(pointFiled[0].trim());

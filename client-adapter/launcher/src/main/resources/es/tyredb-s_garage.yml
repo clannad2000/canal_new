@@ -7,6 +7,7 @@ esMapping:
   _id: _id
   main: true
   upsert: true
+  tableName: s_garage
   properties:
     _id:
       column: garage_id
@@ -22,7 +23,7 @@ esMapping:
       column: license_url
     address:
       column: pro_name, city_name, area_name, detailed
-      handler: concat
+      processor: concat
     areaNumber:
       column: area_number
     cityNumber:
@@ -35,7 +36,7 @@ esMapping:
       column: lat
     location:
       column: lat, lng
-      handler: geo_point
+      processor: geo_point
     userName:
       column: user_name
     company:
@@ -50,17 +51,16 @@ esMapping:
       column: contact
     car:
       column: car
-      handler: array
+      processor: array
     truck:
       column: truck
-      handler: array
+      processor: array
     carName:
       column: car_name
     truckName:
       column: truck_name
     brand:
       column: car_name, truck_name
-      handler: array
-  tableName: s_garage
+      processor: array
   #    etlCondition: "where a.c_time>='{0}'"
   commitBatch: 3000

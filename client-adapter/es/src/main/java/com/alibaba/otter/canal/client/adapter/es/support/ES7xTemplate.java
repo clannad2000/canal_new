@@ -61,12 +61,7 @@ public class ES7xTemplate implements ESTemplate {
     @Override
     public void update(ESSyncConfig.ESMapping mapping, Object pkVal, Map<String, Object> esFieldData) {
         List<String> ids = getIds(mapping, pkVal);
-
-        if (mapping.isMain()) {
-            update(mapping.get_index(), true, ids, esFieldData);
-            return;
-        }
-        update(mapping.get_index(), false, ids, esFieldData);
+        update(mapping.get_index(), mapping.isMain(), ids, esFieldData);
     }
 
     /**
@@ -147,7 +142,6 @@ public class ES7xTemplate implements ESTemplate {
 
 
     //es删除请求
-    @SneakyThrows
     private void delete(String esIndex, List<String> ids) {
         for (String id : ids) {
             DeleteRequest deleteRequest = new DeleteRequest(esIndex, id);
@@ -158,7 +152,6 @@ public class ES7xTemplate implements ESTemplate {
 
 
     //es更新请求
-    @SneakyThrows
     private void update(String esIndex, Boolean upsert, List<String> ids, Map<String, Object> esFieldData) {
         for (String id : ids) {
             UpdateRequest updateRequest = new UpdateRequest(esIndex, id).doc(esFieldData).docAsUpsert(upsert);

@@ -246,6 +246,7 @@ public class ExtensionLoader<T> {
         return null;
     }
 
+    //载入插件
     private Map<String, Class<?>> loadExtensionClasses() {
         final SPI defaultAnnotation = type.getAnnotation(SPI.class);
         if (defaultAnnotation != null) {
@@ -263,6 +264,7 @@ public class ExtensionLoader<T> {
         Map<String, Class<?>> extensionClasses = new HashMap<>();
 
         // 1. plugin folder，customized extension classLoader （jar_dir/plugin）
+        //插件目录
         String dir = File.separator + this.getJarDirectoryPath() + File.separator + "plugin";
 
         File externalLibDir = new File(dir);
@@ -272,12 +274,13 @@ public class ExtensionLoader<T> {
         }
         logger.info("extension classpath dir: " + externalLibDir.getAbsolutePath());
         if (externalLibDir.exists()) {
+            //获取插件jar包列表
             File[] files = externalLibDir.listFiles((dir1, name) -> name.endsWith(".jar"));
             if (files != null) {
-                for (File f : files) {
+                for (File file : files) {
                     URL url;
                     try {
-                        url = f.toURI().toURL();
+                        url = file.toURI().toURL();
                     } catch (MalformedURLException e) {
                         throw new RuntimeException("load extension jar failed!", e);
                     }

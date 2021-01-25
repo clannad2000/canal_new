@@ -16,18 +16,18 @@ import com.google.common.base.Joiner;
 
 public abstract class AbstractEtlService {
 
-    protected Logger      logger       = LoggerFactory.getLogger(this.getClass());
+    protected Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    private String        type;
+    private String type;
     private AdapterConfig config;
-    private final long    CNT_PER_TASK = 10000L;
+    private final long CNT_PER_TASK = 10000L;
 
-    public AbstractEtlService(String type, AdapterConfig config){
+    public AbstractEtlService(String type, AdapterConfig config) {
         this.type = type;
         this.config = config;
     }
 
-    protected EtlResult importData(String sql, List<String> params) {
+    protected EtlResult importData(String tableName, List<String> params) {
         EtlResult etlResult = new EtlResult();
         AtomicLong impCount = new AtomicLong();
         List<String> errMsg = new ArrayList<>();
@@ -37,6 +37,7 @@ public abstract class AbstractEtlService {
             return etlResult;
         }
 
+        String sql = "select * from " + tableName;
         long start = System.currentTimeMillis();
         try {
             DruidDataSource dataSource = DatasourceConfig.DATA_SOURCES.get(config.getDataSourceKey());
@@ -58,7 +59,7 @@ public abstract class AbstractEtlService {
             }
 
             // 获取总数
-            String countSql = "SELECT COUNT(1) FROM ( " + sql + ") _CNT ";
+            String countSql = "SELECT COUNT(1) FROM " + tableName;
             long cnt = (Long) Util.sqlRS(dataSource, countSql, values, rs -> {
                 Long count = null;
                 try {
@@ -89,11 +90,11 @@ public abstract class AbstractEtlService {
                     offset = size * i;
                     String sqlFinal = sql + " LIMIT " + offset + "," + size;
                     Future<Boolean> future = executor.submit(() -> executeSqlImport(dataSource,
-                        sqlFinal,
-                        values,
-                        config.getMapping(),
-                        impCount,
-                        errMsg));
+                            sqlFinal,
+                            values,
+                            config.getMapping(),
+                            impCount,
+                            errMsg));
                     futures.add(future);
                 }
 

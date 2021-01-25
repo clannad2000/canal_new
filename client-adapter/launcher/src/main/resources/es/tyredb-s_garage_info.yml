@@ -7,8 +7,13 @@ esMapping:
   _id: _id
   main: false
   upsert: false
-#  skipSync:
-#    - DELETE
+  tableName: s_garage_info
+  #  skipSync:
+  #    - DELETE
+  preprocessors:
+    businessTimeProcessor:
+      column: business_start_time,business_end_time
+      param: businessStartTimeQ1,businessEndTimeQ1,businessStartTimeQ2,businessEndTimeQ2
   properties:
     _id:
       column: garage_id
@@ -16,23 +21,28 @@ esMapping:
       column: top_image
     businessStartTime:
       column: business_start_time
-      handler: HHmmDate
     businessEndTime:
       column: business_end_time
-      handler: HHmmDate
+    businessStartTimeQ1:
+      column: businessStartTimeQ1
+    businessEndTimeQ1:
+      column: businessEndTimeQ1
+    businessStartTimeQ2:
+      column: businessStartTimeQ2
+    businessEndTimeQ2:
+      column: businessEndTimeQ2
     tireNum:
       column: tire_num
     garageStatus:
       column: garage_status
     supportService:
       column: support_service
-      handler: array
+      processor: array
     supportName:
       column: support_name
-      handler: array
+      processor: array
     serviceTel:
       column: service_tel
-      handler: array
-  tableName: s_garage_info
+      processor: array
   #  etlCondition: "where a.c_time>='{0}'"
   commitBatch: 3000

@@ -15,6 +15,8 @@ import com.alibaba.otter.canal.client.adapter.es.support.ESConnection;
 import com.alibaba.otter.canal.client.adapter.es.config.ESSyncConfig;
 import com.alibaba.otter.canal.client.adapter.es.support.ESSyncUtil;
 import com.alibaba.otter.canal.client.adapter.es.support.ESTemplate;
+import com.alibaba.otter.canal.client.adapter.es.support.processor.pre.Preprocessor;
+import com.alibaba.otter.canal.client.adapter.es.support.processor.pre.PreprocessorFactory;
 import com.alibaba.otter.canal.client.adapter.support.AbstractEtlService;
 import com.alibaba.otter.canal.client.adapter.support.AdapterConfig;
 import com.alibaba.otter.canal.client.adapter.support.EtlResult;
@@ -42,8 +44,8 @@ public class ESEtlService extends AbstractEtlService {
     public EtlResult importData(List<String> params) {
         ESSyncConfig.ESMapping mapping = config.getEsMapping();
         logger.info("start etl to import data to index: {}", mapping.get_index());
-        String sql = mapping.getSql();
-        return importData(sql, params);
+        String tableName = mapping.getTableName();
+        return importData(tableName, params);
     }
 
     protected boolean executeSqlImport(DataSource ds, String sql, List<Object> values,
@@ -66,6 +68,13 @@ public class ESEtlService extends AbstractEtlService {
                             sourceData.put(md.getColumnLabel(i),resultSet.getObject(i));
                         }
 
+                        //前置数据处理
+                        mapping.getPreprocessors().forEach((name, attribute) -> {
+                            Preprocessor preprocessor = PreprocessorFactory.getInstance(name);
+                            preprocessor.dispose(sourceData, attribute);
+                        });
+
+                        //数据处理
                         mapping.getProperties().forEach((esFieldName, fieldMapping) -> {
                             Object value = ESSyncUtil.dataMapping(sourceData, fieldMapping, esFieldName);
                             esFieldData.put(esFieldName, value);

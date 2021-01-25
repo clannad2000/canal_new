@@ -67,19 +67,21 @@ public class ESSyncConfig implements AdapterConfig {
         private boolean                      main; //是否是主表
         private boolean                      idMode; //主键: true: id模式, false: pk
         private String                       tableName; //数据库表名
-        private Map<String, FieldMapping>    properties; //es属性表
+        private Map<String, FieldMapping>    properties = new LinkedHashMap<>(); //es属性表
 
-        //private SchemaItem                   schemaItem;                             // sql解析结果模型
+        private Map<String,FieldMapping>     preprocessors = new LinkedHashMap<>(); //前置数据处理器
+
+        private Map<String,FieldMapping>     postprocessors = new LinkedHashMap<>(); //后置数据处理器
 
         public void set_id(String _id) {
             this._id = _id;
-            if("_id".equalsIgnoreCase(_id)) idMode=true;
+            if("_id".equalsIgnoreCase(_id)) idMode = true;
         }
 
         @Data
         public static class FieldMapping {
            private String type; //es属性类型
-           private String handler; //处理器名称
+           private String processor; //处理器名称
            private String column; //数据来源的sql列名
            private String param; //参数
         }

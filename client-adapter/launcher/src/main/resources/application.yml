@@ -78,14 +78,6 @@ canal.conf:
                 # security.auth: test:123456 #  only used for rest mode
                 #es集群名称
                 cluster.name: docker-cluster
-            - name: es7
-              #es服务器列表
-              hosts: 192.168.2.120:9200 # 127.0.0.1:9200 for rest mode
-              properties:
-                mode: rest # or rest
-                # security.auth: test:123456 #  only used for rest mode
-                #es集群名称
-                cluster.name: docker-cluster
 
 #      - name: rdb
 #        key: mysql1

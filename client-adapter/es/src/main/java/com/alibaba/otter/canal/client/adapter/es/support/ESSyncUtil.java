@@ -9,13 +9,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.alibaba.otter.canal.client.adapter.es.support.handler.DataMappingHandlerFactory;
+import com.alibaba.otter.canal.client.adapter.es.support.processor.data.DataMappingProcessorFactory;
 import com.alibaba.otter.canal.client.adapter.es.config.ESSyncConfig;
 import com.google.common.base.Splitter;
 import org.apache.commons.codec.binary.Base64;
@@ -284,11 +282,11 @@ public class ESSyncUtil {
         String sqlField = fieldMapping.getColumn() != null ? fieldMapping.getColumn() : getDefaultSqlField(esField);
 
         //如果字段的数据处理器为空,直接从源数据中取值.
-        if (fieldMapping.getHandler() == null) return sourceData.get(sqlField);
+        if (fieldMapping.getProcessor() == null) return sourceData.get(sqlField);
 
         //基本类型除了布尔类型,其他的基本类型不需要额外转换.
         Object val = sourceData.get(sqlField);
-        switch (fieldMapping.getHandler()) {
+        switch (fieldMapping.getProcessor()) {
             case "boolean":
                 if (val == null) return null;
                 return ((Byte) val).intValue() != 0;
@@ -312,7 +310,7 @@ public class ESSyncUtil {
                 }
                 //自定义数据转换器
             default:
-                return DataMappingHandlerFactory.getInstance(fieldMapping.getHandler()).handle(sourceData, fieldMapping);
+                return DataMappingProcessorFactory.getInstance(fieldMapping.getProcessor()).dispose(sourceData, fieldMapping);
         }
     }
 

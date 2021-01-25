@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.alibaba.otter.canal.client.adapter.es.config.ESSyncConfig;
+import com.alibaba.otter.canal.client.adapter.es.support.processor.pre.Preprocessor;
+import com.alibaba.otter.canal.client.adapter.es.support.processor.pre.PreprocessorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,22 +121,24 @@ public class ESSyncService {
 
         ESSyncConfig.ESMapping mapping = config.getEsMapping();
 
-        //需要解析的属性
-        Map<String, ESSyncConfig.ESMapping.FieldMapping> properties = mapping.getProperties();
-
         for (Map<String, Object> sourceData : dataList) {
             if (sourceData == null || sourceData.isEmpty()) continue;
 
+            //前置处理
+            mapping.getPreprocessors().forEach((name, attribute) -> {
+                Preprocessor preprocessor = PreprocessorFactory.getInstance(name);
+                preprocessor.dispose(sourceData, attribute);
+            });
+
             //数据转换
             Map<String, Object> esFieldData = new LinkedHashMap<>();
-            properties.forEach((esFieldName, attribute) -> {
+            mapping.getProperties().forEach((esFieldName, attribute) -> {
                 Object value = ESSyncUtil.dataMapping(sourceData, attribute, esFieldName);
-                if (value != null) esFieldData.put(esFieldName, value);
+              esFieldData.put(esFieldName, value);
             });
 
             //取得主键值
             Object idVal = esFieldData.remove(mapping.get_id());
-
 
             if (logger.isTraceEnabled()) {
                 logger.trace("update to es index, destination:{}, table: {}, index: {}, id: {}",
@@ -165,17 +169,18 @@ public class ESSyncService {
 
         ESSyncConfig.ESMapping mapping = config.getEsMapping();
 
-        //需要解析的属性
-        Map<String, ESSyncConfig.ESMapping.FieldMapping> properties = mapping.getProperties();
-
         for (Map<String, Object> sourceData : dataList) {
-            if (sourceData == null || sourceData.isEmpty()) {
-                continue;
-            }
+            if (sourceData == null || sourceData.isEmpty()) continue;
+
+            //前置处理
+            mapping.getPreprocessors().forEach((name, attribute) -> {
+                Preprocessor preprocessor = PreprocessorFactory.getInstance(name);
+                preprocessor.dispose(sourceData, attribute);
+            });
 
             //数据转换
             Map<String, Object> esFieldData = new LinkedHashMap<>();
-            properties.forEach((esFieldName, attribute) -> {
+            mapping.getProperties().forEach((esFieldName, attribute) -> {
                 Object value = ESSyncUtil.dataMapping(sourceData, attribute, esFieldName);
                 esFieldData.put(esFieldName, value);
             });

@@ -1,0 +1,23 @@
+dataSourceKey: defaultDS
+destination: example
+groupId: g3
+esMapping:
+  _index: logistics-s_wx_user
+  _type: _doc
+  _id: _id
+  upsert: true
+#  pk: supplierId
+  syncMode: simple
+  main: true
+  sql: "select id         as _id,
+               user_name  as tel,
+               company    as guestName,
+               bank_no    as accountNo,
+               bank_name  as accountBankName,
+               owner_name as accountName,
+               wx_id      as wxId
+        from s_wx_user"
+#  objFields:
+    #brand: object
+  etlCondition: "where input_date>='{0}'"
+  commitBatch: 3000
