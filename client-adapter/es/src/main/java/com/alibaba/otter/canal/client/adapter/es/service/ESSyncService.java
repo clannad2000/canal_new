@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.alibaba.otter.canal.client.adapter.es.config.ESSyncConfig;
-import com.alibaba.otter.canal.client.adapter.es.support.processor.pre.Preprocessor;
-import com.alibaba.otter.canal.client.adapter.es.support.processor.pre.PreprocessorFactory;
+import com.alibaba.otter.canal.client.adapter.es.support.emun.OperationEnum;
+import com.alibaba.otter.canal.client.adapter.es.support.processor.post.Postprocessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +44,7 @@ public class ESSyncService {
                         dml.getType(),
                         esSyncConfigs.size());
             }
-
+            //串行
             for (ESSyncConfig config : esSyncConfigs) {
                 if (logger.isTraceEnabled()) {
                     logger.trace("Prepared to sync index: {}, destination: {}",
@@ -85,11 +85,11 @@ public class ESSyncService {
             long begin = System.currentTimeMillis();
 
             String type = dml.getType();
-            if (type != null && type.equalsIgnoreCase("INSERT")) {
+            if (type != null && type.equalsIgnoreCase(OperationEnum.INSERT.value)) {
                 insert(config, dml);
-            } else if (type != null && type.equalsIgnoreCase("UPDATE")) {
+            } else if (type != null && type.equalsIgnoreCase(OperationEnum.UPDATE.value)) {
                 update(config, dml);
-            } else if (type != null && type.equalsIgnoreCase("DELETE")) {
+            } else if (type != null && type.equalsIgnoreCase(OperationEnum.DELETE.value)) {
                 delete(config, dml);
             } else {
                 return;
@@ -107,6 +107,7 @@ public class ESSyncService {
         }
     }
 
+
     /**
      * 插入操作dml
      *
@@ -114,45 +115,8 @@ public class ESSyncService {
      * @param dml    dml数据
      */
     private void insert(ESSyncConfig config, Dml dml) {
-        List<Map<String, Object>> dataList = dml.getData();
-        if (dataList == null || dataList.isEmpty()) {
-            return;
-        }
-
-        ESSyncConfig.ESMapping mapping = config.getEsMapping();
-
-        for (Map<String, Object> sourceData : dataList) {
-            if (sourceData == null || sourceData.isEmpty()) continue;
-
-            //前置处理
-            mapping.getPreprocessors().forEach((name, attribute) -> {
-                Preprocessor preprocessor = PreprocessorFactory.getInstance(name);
-                preprocessor.dispose(sourceData, attribute);
-            });
-
-            //数据转换
-            Map<String, Object> esFieldData = new LinkedHashMap<>();
-            mapping.getProperties().forEach((esFieldName, attribute) -> {
-                Object value = ESSyncUtil.dataMapping(sourceData, attribute, esFieldName);
-              esFieldData.put(esFieldName, value);
-            });
-
-            //取得主键值
-            Object idVal = esFieldData.remove(mapping.get_id());
-
-            if (logger.isTraceEnabled()) {
-                logger.trace("update to es index, destination:{}, table: {}, index: {}, id: {}",
-                        config.getDestination(),
-                        dml.getTable(),
-                        mapping.get_index(),
-                        idVal);
-            }
-
-            //插入更新操作
-            esTemplate.insert(mapping, idVal, esFieldData);
-        }
+        update(config, dml, OperationEnum.INSERT);
     }
-
 
     /**
      * 更新操作dml  同插入操作
@@ -161,7 +125,11 @@ public class ESSyncService {
      * @param dml    dml数据
      */
     private void update(ESSyncConfig config, Dml dml) {
+        update(config, dml, OperationEnum.UPDATE);
+    }
 
+
+    private void update(ESSyncConfig config, Dml dml, OperationEnum operationEnum) {
         List<Map<String, Object>> dataList = dml.getData();
         if (dataList == null || dataList.isEmpty()) {
             return;
@@ -172,18 +140,18 @@ public class ESSyncService {
         for (Map<String, Object> sourceData : dataList) {
             if (sourceData == null || sourceData.isEmpty()) continue;
 
-            //前置处理
-            mapping.getPreprocessors().forEach((name, attribute) -> {
-                Preprocessor preprocessor = PreprocessorFactory.getInstance(name);
-                preprocessor.dispose(sourceData, attribute);
-            });
-
             //数据转换
             Map<String, Object> esFieldData = new LinkedHashMap<>();
             mapping.getProperties().forEach((esFieldName, attribute) -> {
-                Object value = ESSyncUtil.dataMapping(sourceData, attribute, esFieldName);
+                Object value = ESSyncUtil.dataMapping(sourceData, attribute, esFieldName, operationEnum);
                 esFieldData.put(esFieldName, value);
             });
+
+            //后置处理
+            if (mapping.isPostprocessor()) {
+                Postprocessor postprocessor = Postprocessor.getInstance(mapping.getConfigFileName());
+                postprocessor.dispose(config, sourceData, esFieldData, operationEnum);
+            }
 
             //取得主键值
             Object idVal = esFieldData.remove(mapping.get_id());
@@ -196,7 +164,6 @@ public class ESSyncService {
                         idVal);
             }
 
-            //插入更新操作
             esTemplate.update(mapping, idVal, esFieldData);
         }
     }
@@ -216,7 +183,7 @@ public class ESSyncService {
         for (Map<String, Object> sourceData : dataList) {
             if (sourceData == null || sourceData.isEmpty()) continue;
 
-            Object idVal = ESSyncUtil.dataMapping(sourceData, mapping.getProperties().get(mapping.get_id()), mapping.get_id());
+            Object idVal = ESSyncUtil.dataMapping(sourceData, mapping.getProperties().get(mapping.get_id()), mapping.get_id(), OperationEnum.DELETE);
 
             //删除操作
             esTemplate.delete(mapping, idVal);

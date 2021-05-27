@@ -15,8 +15,8 @@ import com.alibaba.otter.canal.client.adapter.es.support.ESConnection;
 import com.alibaba.otter.canal.client.adapter.es.config.ESSyncConfig;
 import com.alibaba.otter.canal.client.adapter.es.support.ESSyncUtil;
 import com.alibaba.otter.canal.client.adapter.es.support.ESTemplate;
-import com.alibaba.otter.canal.client.adapter.es.support.processor.pre.Preprocessor;
-import com.alibaba.otter.canal.client.adapter.es.support.processor.pre.PreprocessorFactory;
+import com.alibaba.otter.canal.client.adapter.es.support.emun.OperationEnum;
+import com.alibaba.otter.canal.client.adapter.es.support.processor.post.Postprocessor;
 import com.alibaba.otter.canal.client.adapter.support.AbstractEtlService;
 import com.alibaba.otter.canal.client.adapter.support.AdapterConfig;
 import com.alibaba.otter.canal.client.adapter.support.EtlResult;
@@ -65,25 +65,25 @@ public class ESEtlService extends AbstractEtlService {
                         ResultSetMetaData md = resultSet.getMetaData(); //获得结果集结构信息,元数据
                         int columnCount = md.getColumnCount();   //获得列数
                         for (int i = 1; i <= columnCount; i++) {
-                            sourceData.put(md.getColumnLabel(i),resultSet.getObject(i));
+                            sourceData.put(md.getColumnLabel(i), resultSet.getObject(i));
                         }
-
-                        //前置数据处理
-                        mapping.getPreprocessors().forEach((name, attribute) -> {
-                            Preprocessor preprocessor = PreprocessorFactory.getInstance(name);
-                            preprocessor.dispose(sourceData, attribute);
-                        });
 
                         //数据处理
                         mapping.getProperties().forEach((esFieldName, fieldMapping) -> {
-                            Object value = ESSyncUtil.dataMapping(sourceData, fieldMapping, esFieldName);
+                            Object value = ESSyncUtil.dataMapping(sourceData, fieldMapping, esFieldName, OperationEnum.INSERT);
                             esFieldData.put(esFieldName, value);
                         });
+
+                        //后置处理
+                        if (mapping.isPostprocessor()) {
+                            Postprocessor postprocessor = Postprocessor.getInstance(mapping.getConfigFileName());
+                            postprocessor.dispose(config, sourceData, esFieldData, OperationEnum.INSERT);
+                        }
 
                         //取得主键值
                         Object idVal = esFieldData.remove(mapping.get_id());
 
-                        esTemplate.insert(mapping, idVal, esFieldData);
+                        esTemplate.update(mapping, idVal, esFieldData);
                         count++;
                         impCount.incrementAndGet();
                     }

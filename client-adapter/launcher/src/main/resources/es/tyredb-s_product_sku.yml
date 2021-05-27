@@ -1,0 +1,64 @@
+dataSourceKey: tyredb
+destination: example
+groupId: g3
+esMapping:
+  _index: tyredb-s_product
+  _id: _id
+  main: true
+  upsert: true
+  tableName: s_product_sku
+  properties:
+    _id:
+      column: id
+    skuId:
+      column: id
+    cacheNum:
+      column: cache_num
+    categoryId:
+      column: category_id
+    images:
+      column: images
+      processor: array
+    delStatus:
+      column: del_status
+      processor: boolean
+    stockStatus:
+      column: stockStatus
+      processor: boolean
+    avgLevel:
+      column: avgLevel
+    originalPrice:
+      column: original_price
+    productAttr:
+      column: product_attr
+      processor: object
+    productSellAttr:
+      column: product_sell_attr
+      processor: object
+    productShowAttr:
+      column: product_show_attr
+      processor: object
+    productSkuName:
+      column: product_sku_name
+    productSkuNo:
+      column: product_sku_no
+    salesPrice:
+      column: sales_price
+    sellNum:
+      column: sell_num
+    sellStatus:
+      column: sell_status
+      processor: boolean
+    serviceType:
+      column: service_type
+    skuType:
+      column: sku_type
+    speciality:
+      column: speciality
+      processor: array
+    spuId:
+      column: spu_id
+    status:
+      column: status
+  #  etlCondition: "where a.c_time>='{0}'"
+  commitBatch: 3000

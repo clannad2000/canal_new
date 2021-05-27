@@ -10,6 +10,8 @@ import com.alibaba.otter.canal.client.adapter.es.service.ESSyncService;
 import com.alibaba.otter.canal.client.adapter.es.support.ES7xTemplate;
 import com.alibaba.otter.canal.client.adapter.es.support.ESConnection;
 import com.alibaba.otter.canal.client.adapter.es.support.ESTemplate;
+import com.alibaba.otter.canal.client.adapter.es.support.processor.post.Postprocessor;
+import com.alibaba.otter.canal.client.adapter.es.support.processor.updateByQuery.UpdateByQueryBuilder;
 import com.alibaba.otter.canal.client.adapter.support.DatasourceConfig;
 import com.alibaba.otter.canal.client.adapter.support.Dml;
 import com.alibaba.otter.canal.client.adapter.support.EtlResult;
@@ -47,6 +49,9 @@ public class ES7xAdapter implements OuterAdapter {
     @Override
     public void init(OuterAdapterConfig configuration, Properties envProperties) {
         try {
+            Postprocessor.init();
+            UpdateByQueryBuilder.init();
+
             Map<String, String> properties = configuration.getProperties();
 
             String[] hostArray = configuration.getHosts().split(",");
@@ -196,7 +201,6 @@ public class ES7xAdapter implements OuterAdapter {
             }
         }
         esSyncService.commit(); // 批次统一提交
-
     }
 
     private void sync(Dml dml) {
@@ -214,7 +218,7 @@ public class ES7xAdapter implements OuterAdapter {
 
         if (configMap != null && !configMap.values().isEmpty()) {
             esSyncService.sync(configMap.values(), dml);
-        }
+        }else System.out.println("Not sync config found: " + dml);
     }
 
 

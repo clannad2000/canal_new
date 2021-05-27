@@ -102,6 +102,7 @@ public class ESConnection {
     }
 
 
+
     @Data
     public class ES7xBulkRequest implements ESBulkRequest {
 

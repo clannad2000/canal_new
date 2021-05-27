@@ -140,7 +140,6 @@ public class ESConfigMonitor {
                     configMap.remove(file.getName());
                 }
             }
-
         }
     }
 }

@@ -1,0 +1,29 @@
+dataSourceKey: tyredb
+destination: example
+groupId: g3
+esMapping:
+  _index: tyredb-s_product
+  _id: _id
+  tableName: s_product
+#  postprocessor: false
+  updateByQuery: true
+  properties:
+    _id:
+      column: id
+    brandId:
+      column: brand_id
+    brandName:
+      column: brand_name
+    categoryId:
+      column: category_id
+    customerNo:
+      column: customer_no
+    companyType:
+      column: company_type
+    deliverAddress:
+      column: deliver_address
+    spuDelStatus:
+      column: del_status
+      processor: boolean
+  #  etlCondition: "where a.c_time>='{0}'"
+  commitBatch: 3000

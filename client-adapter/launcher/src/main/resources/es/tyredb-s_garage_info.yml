@@ -8,12 +8,7 @@ esMapping:
   main: false
   upsert: false
   tableName: s_garage_info
-  #  skipSync:
-  #    - DELETE
-  preprocessors:
-    businessTimeProcessor:
-      column: business_start_time,business_end_time
-      param: businessStartTimeQ1,businessEndTimeQ1,businessStartTimeQ2,businessEndTimeQ2
+  postprocessor: true
   properties:
     _id:
       column: garage_id
@@ -44,5 +39,9 @@ esMapping:
     serviceTel:
       column: service_tel
       processor: array
+    number:
+      column: c_number
+    ctel:
+      column: c_tel
   #  etlCondition: "where a.c_time>='{0}'"
   commitBatch: 3000

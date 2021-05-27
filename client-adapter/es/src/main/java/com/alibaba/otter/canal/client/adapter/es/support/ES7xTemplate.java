@@ -1,13 +1,20 @@
 package com.alibaba.otter.canal.client.adapter.es.support;
 
 import com.alibaba.otter.canal.client.adapter.es.config.ESSyncConfig;
+import com.alibaba.otter.canal.client.adapter.es.support.emun.ComponentTypeEnum;
+import com.alibaba.otter.canal.client.adapter.es.support.processor.updateByQuery.*;
 import lombok.SneakyThrows;
+import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
@@ -45,23 +52,18 @@ public class ES7xTemplate implements ESTemplate {
     }
 
 
-    /**
-     * 插入数据
-     *
-     * @param mapping     配置对象
-     * @param pkVal       主键值
-     * @param esFieldData 数据Map
-     */
-    @Override
-    public void insert(ESSyncConfig.ESMapping mapping, Object pkVal, Map<String, Object> esFieldData) {
-        update(mapping, pkVal, esFieldData);
-    }
-
-
     @Override
     public void update(ESSyncConfig.ESMapping mapping, Object pkVal, Map<String, Object> esFieldData) {
+
+        //是否查询更新操作
+        if (mapping.isUpdateByQuery()) {
+            updateByQueryForES(mapping, esFieldData);
+            return;
+        }
+
+
         List<String> ids = getIds(mapping, pkVal);
-        update(mapping.get_index(), mapping.isMain(), ids, esFieldData);
+        update(mapping.get_index(), mapping.isUpsert(), ids, esFieldData);
     }
 
     /**
@@ -72,12 +74,36 @@ public class ES7xTemplate implements ESTemplate {
      * @param esFieldData 数据Map
      */
     @Override
-    public void updateByQuery(ESSyncConfig config, Map<String, Object> paramsTmp, Map<String, Object> esFieldData) {
+    public void updateByQueryForSql(ESSyncConfig config, Map<String, Object> paramsTmp, Map<String, Object> esFieldData) {
         if (paramsTmp.isEmpty()) {
             return;
         }
     }
 
+    /**
+     * update by query for es
+     *
+     * @param mapping     配置对象
+     * @param esFieldData 数据Map
+     */
+    @SneakyThrows
+    @Override
+    public void updateByQueryForES(ESSyncConfig.ESMapping mapping, Map<String, Object> esFieldData) {
+        UpdateByQueryBuilder updateByQueryBuilder = UpdateByQueryBuilder.getInstance(mapping.getConfigFileName());
+        if (updateByQueryBuilder == null)
+            throw new RuntimeException("Not found updateByQueryBuilder" + mapping.getConfigFileName());
+        UpdateByQueryInfo updateByQueryInfo = updateByQueryBuilder.build(esFieldData, mapping);
+        UpdateByQueryRequest updateByQueryRequest = new UpdateByQueryRequest(mapping.get_index());
+        Script script = new Script(ScriptType.STORED, null, updateByQueryInfo.getScriptId(), esFieldData);
+        updateByQueryRequest.setScript(script);
+        updateByQueryRequest.setQuery(updateByQueryInfo.getQuery());
+
+        BulkByScrollResponse scrollResponse = esConnection.getRestHighLevelClient().updateByQuery(updateByQueryRequest, RequestOptions.DEFAULT);
+        List<BulkItemResponse.Failure> bulkFailures = scrollResponse.getBulkFailures();
+        if (!bulkFailures.isEmpty()) {
+            throw new RuntimeException("ES sync commit error: " + bulkFailures);
+        }
+    }
 
     /**
      * 通过主键删除数据
@@ -100,8 +126,14 @@ public class ES7xTemplate implements ESTemplate {
         Map<String, Object> esFieldData = new HashMap<>();
         mapping.getProperties().keySet().forEach(key -> esFieldData.put(key, null));
         esFieldData.remove(mapping.get_id());
-        update(mapping.get_index(), false, ids, esFieldData);
 
+        //是否查询更新操作
+        if (mapping.isUpdateByQuery()) {
+            updateByQueryForES(mapping, esFieldData);
+            return;
+        }
+
+        update(mapping.get_index(), false, ids, esFieldData);
     }
 
 
@@ -126,6 +158,7 @@ public class ES7xTemplate implements ESTemplate {
         List<String> ids;
         //根据主键模式取得对应的文档id.
         if (mapping.isIdMode()) {
+            if (idVal == null) throw new RuntimeException("idVal is not null!");
             //id主键: 直接使用idVal
             ids = Collections.singletonList(idVal.toString());
         } else {

@@ -27,12 +27,13 @@ public class ESSyncConfigLoader {
 
         String esv = envProperties.getProperty("es.version");
         Map<String, String> configContentMap = MappingConfigsLoader.loadConfigs(esv);
-        configContentMap.forEach((fileName, content) -> {
-            ESSyncConfig config = YmlConfigBinder.bindYmlToObj(null, content, ESSyncConfig.class, null, envProperties);
+        configContentMap.forEach((fileName, fileContent) -> {
+            ESSyncConfig config = YmlConfigBinder.bindYmlToObj(null, fileContent, ESSyncConfig.class, null, envProperties);
             if (config == null) {
                 return;
             }
             config.setEsVersion(esv);
+            config.getEsMapping().setConfigFileName(fileName.substring(0, fileName.lastIndexOf('.')).replaceAll("[^0-9a-zA-Z]", "").toLowerCase());
             try {
                 config.validate();
             } catch (Exception e) {
