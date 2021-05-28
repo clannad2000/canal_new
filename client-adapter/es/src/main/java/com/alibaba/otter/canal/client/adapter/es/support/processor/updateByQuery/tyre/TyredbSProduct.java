@@ -24,11 +24,11 @@ public class TyredbSProduct extends UpdateByQueryBuilder {
     @Override
     public UpdateByQueryInfo build(Map<String, Object> esFieldData, ESSyncConfig.ESMapping mapping) {
         //更新对应的sku
-        DruidDataSource dataSource = DatasourceConfig.DATA_SOURCES.get("tyredb");
-        jdbcTemplate.setDataSource(dataSource);
-        List<String> skuIds = jdbcTemplate.queryForList("select id from s_product_sku where spu_id = ?", String.class, esFieldData.get("_id"));
+        //DruidDataSource dataSource = DatasourceConfig.DATA_SOURCES.get("tyredb");
+        //jdbcTemplate.setDataSource(dataSource);
+        //List<String> skuIds = jdbcTemplate.queryForList("select id from s_product_sku where spu_id = ?", String.class, esFieldData.get("_id"));
         return UpdateByQueryInfo.builder()
-                .query(QueryBuilders.termsQuery("skuId", skuIds))
+                .query(QueryBuilders.termsQuery("spuId", esFieldData.get("spuId")))
                 .scriptId("tyre-s_product_sku-set_spu_info")
                 .build();
     }

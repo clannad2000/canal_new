@@ -10,6 +10,8 @@ esMapping:
   properties:
     _id:
       column: id
+    spuId:
+      column: id
     brandId:
       column: brand_id
     brandName:
