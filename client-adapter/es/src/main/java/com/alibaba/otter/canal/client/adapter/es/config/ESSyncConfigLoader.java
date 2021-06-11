@@ -37,6 +37,9 @@ public class ESSyncConfigLoader {
             try {
                 config.validate();
             } catch (Exception e) {
+                logger.error("ERROR Config: " + fileName + " " + e.getMessage(), e);
+                e.printStackTrace();
+                System.exit(1);
                 throw new RuntimeException("ERROR Config: " + fileName + " " + e.getMessage(), e);
             }
             esSyncConfig.put(fileName, config);

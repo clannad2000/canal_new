@@ -1,0 +1,28 @@
+dataSourceKey: defaultDS
+destination: example
+groupId: g1
+outerAdapterKey: tyredb-s_company
+concurrent: true
+dbMapping:
+  database: tyredb
+  table: s_garage
+  targetTable: tyredb.s_company
+  targetPk:
+    id: login_no
+#  mapAll: true
+  targetColumns:
+    login_no: user_name
+    address: detailed
+#  etlCondition: "where c_time>={}"
+  commitBatch: 3000 # 批量提交的大小
+
+
+## Mirror schema synchronize config
+#dataSourceKey: defaultDS
+#destination: example
+#groupId: g1
+#outerAdapterKey: mysql1
+#concurrent: true
+#dbMapping:
+#  mirrorDb: true
+#  database: mytest

@@ -1,0 +1,35 @@
+dataSourceKey: tyredb
+destination: example
+groupId: g3
+esMapping:
+  _index: tyredb-s_product_v1
+  _id: _id
+  tableName: s_company
+  updateByQuery:
+    scriptId: tyre-sku-s_company
+    pk: customerNo
+  properties:
+    _id:
+      column: id
+    customerNo:
+      column: 'no'
+    companyAreaNumber:
+      column: area_number
+    companyCityNumber:
+      column: city_number
+    companyProvinceNumber:
+      column: province_number
+    companyAuditStatus:
+      column: audit_status
+    companyStatus:
+      column: status
+    accountStatus:
+      column: account_status
+    name:
+      column: name
+    address:
+      column: address
+    serviceTel:
+      column: service_tel
+  #  etlCondition: "where a.c_time>='{0}'"
+  commitBatch: 3000

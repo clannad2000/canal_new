@@ -1,6 +1,8 @@
 package com.alibaba.otter.canal.client.adapter.es.support;
 
+import com.alibaba.otter.canal.client.adapter.es.support.model.ESRequest;
 import lombok.Data;
+import lombok.SneakyThrows;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
@@ -13,6 +15,7 @@ import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.GetAliasesResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
@@ -21,13 +24,17 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetMappingsRequest;
 import org.elasticsearch.client.indices.GetMappingsResponse;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
-import org.elasticsearch.rest.RestStatus;
+import org.elasticsearch.common.xcontent.XContentType;
+import org.joda.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -42,7 +49,7 @@ public class ESConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(ESConnection.class);
 
-    private RestHighLevelClient restHighLevelClient;
+    private static RestHighLevelClient restHighLevelClient;
 
     public ESConnection(String[] hosts, Map<String, String> properties) throws UnknownHostException {
         HttpHost[] httpHosts = new HttpHost[hosts.length];
@@ -101,6 +108,9 @@ public class ESConnection {
         return mappings.get(writeIndex.get());
     }
 
+    public RestHighLevelClient getRestHighLevelClient() {
+        return restHighLevelClient;
+    }
 
 
     @Data
@@ -110,12 +120,21 @@ public class ESConnection {
 
         private BulkRequest bulkRequest;
 
+        private List<ESRequest> requests;
+
+        @Override
+        public void addReqObj(ESRequest request) {
+            requests.add(request);
+        }
+
         public ES7xBulkRequest() {
             bulkRequest = new BulkRequest();
+            requests = new ArrayList<>();
         }
 
         public void resetBulk() {
             bulkRequest = new BulkRequest();
+            requests = new ArrayList<>();
         }
 
         public int numberOfActions() {
@@ -125,7 +144,7 @@ public class ESConnection {
         public ESBulkResponse bulk() {
             try {
                 BulkResponse responses = restHighLevelClient.bulk(bulkRequest, RequestOptions.DEFAULT);
-                return new ES7xBulkResponse(responses);
+                return new ES7xBulkResponse(requests, responses);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -140,9 +159,12 @@ public class ESConnection {
 
     public static class ES7xBulkResponse implements ESBulkRequest.ESBulkResponse {
 
+        private List<ESRequest> requests;
+
         private BulkResponse bulkResponse;
 
-        public ES7xBulkResponse(BulkResponse bulkResponse) {
+        public ES7xBulkResponse(List<ESRequest> requests, BulkResponse bulkResponse) {
+            this.requests = requests;
             this.bulkResponse = bulkResponse;
         }
 
@@ -151,18 +173,28 @@ public class ESConnection {
             return bulkResponse.hasFailures();
         }
 
+        @SneakyThrows
         @Override
-        public void processFailBulkResponse(String errorMsg) {
-            for (BulkItemResponse itemResponse : bulkResponse.getItems()) {
+        public void processFailBulkResponse(BulkRequest bulkRequest, String errorMsg) {
+            BulkItemResponse[] items = bulkResponse.getItems();
+            for (int i = 0; i < items.length; i++) {
+                BulkItemResponse itemResponse = items[i];
                 if (!itemResponse.isFailed()) {
                     continue;
                 }
 
-                if (itemResponse.getFailure().getStatus() == RestStatus.NOT_FOUND) {
-                    logger.error(itemResponse.getFailureMessage());
-                } else {
-                    throw new RuntimeException(errorMsg + itemResponse.getFailureMessage());
-                }
+                logger.error(errorMsg + itemResponse.getFailureMessage());
+                Map<String, Object> map = new HashMap<>();
+                map.put("statusName", itemResponse.status().name());
+                map.put("status", itemResponse.status().getStatus());
+                map.put("failureMessage", itemResponse.getFailureMessage());
+                map.put("request", requests.get(i));
+                map.put("createTime", System.currentTimeMillis());
+                map.put("createDate", LocalDateTime.now().toString("yyyy-MM-dd HH:mm:ss"));
+                IndexRequest indexRequest = new IndexRequest();
+                indexRequest.index("canal-adapter_es_error_"+LocalDateTime.now().toString("yyyy-MM-dd"));
+                indexRequest.source(GsonUtil.gson.toJson(map), XContentType.JSON);
+                restHighLevelClient.index(indexRequest, RequestOptions.DEFAULT);
             }
         }
     }

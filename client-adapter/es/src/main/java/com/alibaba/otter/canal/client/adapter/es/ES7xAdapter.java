@@ -7,11 +7,11 @@ import com.alibaba.otter.canal.client.adapter.es.config.ESSyncConfigLoader;
 import com.alibaba.otter.canal.client.adapter.es.etl.ESEtlService;
 import com.alibaba.otter.canal.client.adapter.es.monitor.ESConfigMonitor;
 import com.alibaba.otter.canal.client.adapter.es.service.ESSyncService;
+import com.alibaba.otter.canal.client.adapter.es.support.model.DmlFilterConfig;
 import com.alibaba.otter.canal.client.adapter.es.support.ES7xTemplate;
 import com.alibaba.otter.canal.client.adapter.es.support.ESConnection;
 import com.alibaba.otter.canal.client.adapter.es.support.ESTemplate;
-import com.alibaba.otter.canal.client.adapter.es.support.processor.post.Postprocessor;
-import com.alibaba.otter.canal.client.adapter.es.support.processor.updateByQuery.UpdateByQueryBuilder;
+import com.alibaba.otter.canal.client.adapter.es.support.transform.data.DataHandlerFactory;
 import com.alibaba.otter.canal.client.adapter.support.DatasourceConfig;
 import com.alibaba.otter.canal.client.adapter.support.Dml;
 import com.alibaba.otter.canal.client.adapter.support.EtlResult;
@@ -23,10 +23,13 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RequestOptions;
 
 import javax.sql.DataSource;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -49,8 +52,7 @@ public class ES7xAdapter implements OuterAdapter {
     @Override
     public void init(OuterAdapterConfig configuration, Properties envProperties) {
         try {
-            Postprocessor.init();
-            UpdateByQueryBuilder.init();
+            DataHandlerFactory.init();
 
             Map<String, String> properties = configuration.getProperties();
 
@@ -83,11 +85,14 @@ public class ES7xAdapter implements OuterAdapter {
                     addSyncConfigToCache(configName, config);
                 }
 
+                dmlFilterConfig = builderFilterConfig();
+
                 esSyncService = new ESSyncService(esTemplate);
 
                 esConfigMonitor = new ESConfigMonitor();
                 esConfigMonitor.init(this, envProperties);
             } catch (Throwable e) {
+                e.printStackTrace();
                 throw new RuntimeException(e);
             }
 
@@ -178,6 +183,8 @@ public class ES7xAdapter implements OuterAdapter {
 
     protected Properties envProperties;
 
+    protected List<DmlFilterConfig> dmlFilterConfig;
+
     public ESSyncService getEsSyncService() {
         return esSyncService;
     }
@@ -197,10 +204,46 @@ public class ES7xAdapter implements OuterAdapter {
         }
         for (Dml dml : dmls) {
             if (!dml.getIsDdl()) {
+                filterDml(dml);
                 sync(dml);
             }
         }
         esSyncService.commit(); // 批次统一提交
+    }
+
+
+    public void filterDml(Dml dml) {
+        Set<Object> set = new HashSet<>();
+        dmlFilterConfig.forEach(dmlFilterConfig -> {
+            if (dmlFilterConfig.getTableName().equals(dml.getTable())) {
+                for (int i = 0; i < dml.getData().size(); i++) {
+                    set.add(dml.getData().get(i).get(dmlFilterConfig.getIdColumn()));
+                }
+
+                if (set.size() > 1) return;
+                Map<String, Object> data = dml.getData().get(0);
+                dml.getData().clear();
+                dml.getData().add(data);
+                if (dml.getOld() != null) {
+                    Map<String, Object> old = dml.getOld().get(0);
+                    dml.getOld().clear();
+                    dml.getOld().add(old);
+                }
+            }
+        });
+    }
+
+    public List<DmlFilterConfig> builderFilterConfig() {
+        List<DmlFilterConfig> list = new ArrayList<>();
+        esSyncConfig.values().forEach(config -> {
+            if (config.getEsMapping().isDmlFilter()) {
+                list.add(DmlFilterConfig.builder()
+                        .tableName(config.getEsMapping().getTableName())
+                        .idColumn(config.getEsMapping().getProperties().get(config.getEsMapping().get_id()).getColumn())
+                        .build());
+            }
+        });
+        return list;
     }
 
     private void sync(Dml dml) {
@@ -218,7 +261,7 @@ public class ES7xAdapter implements OuterAdapter {
 
         if (configMap != null && !configMap.values().isEmpty()) {
             esSyncService.sync(configMap.values(), dml);
-        }else System.out.println("Not sync config found: " + dml);
+        } else System.out.println("Not sync config found: " + dml);
     }
 
 

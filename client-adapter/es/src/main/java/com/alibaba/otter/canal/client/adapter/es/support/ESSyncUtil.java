@@ -22,8 +22,8 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
-import com.alibaba.otter.canal.client.adapter.es.support.emun.OperationEnum;
-import com.alibaba.otter.canal.client.adapter.es.support.processor.data.FieldMappingProcessorFactory;
+import com.alibaba.otter.canal.client.adapter.es.support.emun.OpTypeEnum;
+import com.alibaba.otter.canal.client.adapter.es.support.transform.field.FieldMappingHandlerFactory;
 import com.alibaba.otter.canal.client.adapter.es.config.ESSyncConfig;
 import com.google.common.base.Splitter;
 import org.apache.commons.codec.binary.Base64;
@@ -285,7 +285,7 @@ public class ESSyncUtil {
      * @author 黄念
      * @date 2020/12/25 8:52
      */
-    public static Object dataMapping(Map<String, Object> sourceData, ESSyncConfig.ESMapping.FieldMapping fieldMapping, String esField, OperationEnum operationEnum) {
+    public static Object dataMapping(Map<String, Object> sourceData, ESSyncConfig.ESMapping.FieldMapping fieldMapping, String esField, OpTypeEnum opTypeEnum) {
         //取得对应的sql字段. 如果对应的sql字段为空,则使用默认的规则获取sql字段. 例: userName->user_name
         String sqlField = fieldMapping.getColumn() != null ? fieldMapping.getColumn() : getDefaultSqlField(esField);
 
@@ -326,7 +326,7 @@ public class ESSyncUtil {
                 }
                 //自定义数据转换器
             default:
-                return FieldMappingProcessorFactory.getInstance(fieldMapping.getProcessor()).dispose(sourceData, fieldMapping, operationEnum);
+                return FieldMappingHandlerFactory.getInstance(fieldMapping.getProcessor()).dispose(sourceData, fieldMapping, opTypeEnum);
         }
     }
 

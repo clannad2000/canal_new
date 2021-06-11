@@ -13,10 +13,10 @@ import com.alibaba.otter.canal.client.adapter.es.support.ESBulkRequest;
 import com.alibaba.otter.canal.client.adapter.es.support.ESConnection;
 
 import com.alibaba.otter.canal.client.adapter.es.config.ESSyncConfig;
-import com.alibaba.otter.canal.client.adapter.es.support.ESSyncUtil;
 import com.alibaba.otter.canal.client.adapter.es.support.ESTemplate;
-import com.alibaba.otter.canal.client.adapter.es.support.emun.OperationEnum;
-import com.alibaba.otter.canal.client.adapter.es.support.processor.post.Postprocessor;
+import com.alibaba.otter.canal.client.adapter.es.support.emun.OpTypeEnum;
+import com.alibaba.otter.canal.client.adapter.es.support.transform.data.DataHandler;
+import com.alibaba.otter.canal.client.adapter.es.support.transform.data.DataHandlerFactory;
 import com.alibaba.otter.canal.client.adapter.support.AbstractEtlService;
 import com.alibaba.otter.canal.client.adapter.support.AdapterConfig;
 import com.alibaba.otter.canal.client.adapter.support.EtlResult;
@@ -59,7 +59,6 @@ public class ESEtlService extends AbstractEtlService {
                     ESBulkRequest esBulkRequest = this.esConnection.new ES7xBulkRequest();
                     long batchBegin = System.currentTimeMillis();
                     while (resultSet.next()) {
-                        Map<String, Object> esFieldData = new HashMap<>();
                         Map<String, Object> sourceData = new HashMap<>();
 
                         ResultSetMetaData md = resultSet.getMetaData(); //获得结果集结构信息,元数据
@@ -68,22 +67,14 @@ public class ESEtlService extends AbstractEtlService {
                             sourceData.put(md.getColumnLabel(i), resultSet.getObject(i));
                         }
 
-                        //数据处理
-                        mapping.getProperties().forEach((esFieldName, fieldMapping) -> {
-                            Object value = ESSyncUtil.dataMapping(sourceData, fieldMapping, esFieldName, OperationEnum.INSERT);
-                            esFieldData.put(esFieldName, value);
-                        });
+                        DataHandler dataHandler = DataHandlerFactory.getDataHandler(mapping.getConfigFileName());
 
-                        //后置处理
-                        if (mapping.isPostprocessor()) {
-                            Postprocessor postprocessor = Postprocessor.getInstance(mapping.getConfigFileName());
-                            postprocessor.dispose(config, sourceData, esFieldData, OperationEnum.INSERT);
-                        }
+                        Map<String, Object> esFieldData = dataHandler.dispose(config, sourceData, OpTypeEnum.INSERT);
 
                         //取得主键值
                         Object idVal = esFieldData.remove(mapping.get_id());
 
-                        esTemplate.update(mapping, idVal, esFieldData);
+                        esTemplate.update(mapping, idVal, esFieldData, OpTypeEnum.INSERT);
                         count++;
                         impCount.incrementAndGet();
                     }
@@ -93,7 +84,7 @@ public class ESEtlService extends AbstractEtlService {
                         long esBatchBegin = System.currentTimeMillis();
                         ESBulkRequest.ESBulkResponse rp = esBulkRequest.bulk();
                         if (rp.hasFailures()) {
-                            rp.processFailBulkResponse("全量数据 etl 异常 ");
+                            rp.processFailBulkResponse(esBulkRequest.getBulkRequest(), "全量数据 etl 异常 ");
                         }
                         if (logger.isTraceEnabled()) {
                             logger.trace("全量数据批量导入最后批次耗时: {}, es执行时间: {}, 批次大小: {}, index; {}",

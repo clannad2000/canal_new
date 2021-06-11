@@ -1,5 +1,5 @@
 server:
-  port: 7777
+  port: 9999
 spring:
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
@@ -17,7 +17,7 @@ canal.conf:
   secretKey:
   consumerProperties:
     # canal tcp consumer
-    canal.tcp.server.host: 192.168.2.120:11111
+    canal.tcp.server.host: 127.0.0.1:11111
     canal.tcp.zookeeper.hosts:
     canal.tcp.batch.size: 500
     canal.tcp.username:
@@ -69,7 +69,7 @@ canal.conf:
       groups:
         - groupId: g3
           outerAdapters:
-            - name: logger
+            #- name: logger
             - name: es
               #es服务器列表
               hosts: 192.168.2.120:9200 # 127.0.0.1:9200 for rest mode

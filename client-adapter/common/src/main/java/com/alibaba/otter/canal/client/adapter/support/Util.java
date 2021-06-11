@@ -116,14 +116,10 @@ public class Util {
         }
     }
 
+//    public static Map<String,Object> executeSqlForMap(String dataSourceKey, String sql, List<Object> values, Function<Map<String, Object>, Object> fun) {
 
-//    public static void executeSqlForList(String dataSourceKey, String sql, List<Object> params, Function<List<Map<String, Object>>, Object> fun) {
-//        List<Map<String, Object>> mapList = executeSqlForList(dataSourceKey, sql, params);
-//        fun.apply(mapList);
-//    }
-
-
-    public static void executeSqlForMap(DataSource ds, String sql, List<Object> values, Function<Map<String, Object>, Object> fun) {
+    public static Map<String, Object> executeSqlForMap(String dataSourceKey, String sql, List<Object> values) {
+        DruidDataSource ds = DatasourceConfig.DATA_SOURCES.get(dataSourceKey);
         try (Connection conn = ds.getConnection()) {
             try (PreparedStatement pstmt = conn
                     .prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
@@ -142,8 +138,8 @@ public class Util {
                         for (int i = 1; i <= columnCount; i++) {
                             map.put(md.getColumnLabel(i), resultSet.getObject(i));
                         }
-                        fun.apply(map);
                     }
+                    return map;
                 }
             }
         } catch (Exception e) {

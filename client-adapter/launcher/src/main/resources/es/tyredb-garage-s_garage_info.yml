@@ -1,0 +1,39 @@
+dataSourceKey: tyredb
+destination: example
+groupId: g3
+esMapping:
+  _index: tyredb-s_garage_v1
+  _type: _doc
+  _id: _id
+  main: false
+  upsert: true
+  tableName: s_garage_info
+  postprocessor: true
+  properties:
+    _id:
+      column: garage_id
+    topImage:
+      column: top_image
+    tireNum:
+      column: tire_num
+    garageStatus:
+      column: garage_status
+    supportService:
+      column: support_service
+      processor: array
+    supportName:
+      column: support_name
+      processor: array
+    serviceTel:
+      column: service_tel
+      processor: array
+    customerNo:
+      column: c_number
+    ctel:
+      column: c_tel
+    appraiseNum:
+      column: appraise_num
+    avgLevel:
+      column: avg_level
+  #  etlCondition: "where a.c_time>='{0}'"
+  commitBatch: 3000

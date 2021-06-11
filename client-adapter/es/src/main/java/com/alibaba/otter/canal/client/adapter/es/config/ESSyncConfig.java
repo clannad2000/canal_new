@@ -5,8 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.alibaba.otter.canal.client.adapter.es.support.processor.post.Postprocessor;
-import com.alibaba.otter.canal.client.adapter.es.support.processor.updateByQuery.UpdateByQueryBuilder;
+import com.alibaba.otter.canal.client.adapter.es.support.transform.data.DataHandlerFactory;
 import com.alibaba.otter.canal.client.adapter.support.AdapterConfig;
 import lombok.Data;
 
@@ -42,12 +41,8 @@ public class ESSyncConfig implements AdapterConfig {
             throw new NullPointerException("esMapping._id or esMapping.pk");
         }
 
-        if (esMapping.postprocessor && Postprocessor.getInstance(esMapping.configFileName) == null)
-            throw new NullPointerException("Postprocessor");
-
-        if (esMapping.updateByQuery && UpdateByQueryBuilder.getInstance(esMapping.configFileName) == null)
-            throw new NullPointerException("UpdateByQueryBuilder");
-
+        if (esMapping.extensionHandler && DataHandlerFactory.getDataHandler(esMapping.configFileName) == null)
+            throw new NullPointerException("dataHandler");
     }
 
     public ESMapping getEsMapping() {
@@ -82,23 +77,32 @@ public class ESSyncConfig implements AdapterConfig {
         private String tableName; //数据库表名
         private Map<String, FieldMapping> properties = new LinkedHashMap<>(); //es属性表
 
-        private boolean postprocessor = false; //是否开启后置处理器
+        private boolean extensionHandler = false; //是否开启扩展的处理器
 
-        private boolean updateByQuery = false;  //是否开启查询更新
+        private UpdateByQueryMapping updateByQuery;  //查询更新配置
 
         private String configFileName;  //配置文件名
+
+        private boolean dmlFilter = false;
 
         public void set_id(String _id) {
             this._id = _id;
             if ("_id".equalsIgnoreCase(_id)) idMode = true;
         }
 
+        public String getFlattenedField() {
+            for (String key : properties.keySet()) {
+                if (properties.get(key) != null && "Flattened".equalsIgnoreCase(properties.get(key).getProcessor()))
+                    return key;
+            }
+            return null;
+        }
 
         @Data
         public static class FieldMapping {
             private String processor; //处理器名称
             private String column; //数据来源的sql列名
-            private String param; //参数
+            private String params; //sql参数来源列
             private String dataSourceKey;
             private String sql;
         }
@@ -106,10 +110,7 @@ public class ESSyncConfig implements AdapterConfig {
 
         @Data
         public static class UpdateByQueryMapping {
-            private String dataOrigin; //数据来源
-            private String dataSourceKey;
-            private String sql;
-            private String param; //参数
+            private String pk;       //主键
             private String scriptId; //es脚本id
         }
     }

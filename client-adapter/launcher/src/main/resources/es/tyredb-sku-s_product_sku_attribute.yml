@@ -1,0 +1,18 @@
+dataSourceKey: tyredb
+destination: example
+groupId: g3
+esMapping:
+  _index: tyredb-s_product_v1
+  _id: _id
+  main: false
+  upsert: true
+  tableName: s_product_sku_attribute
+  properties:
+    _id:
+      column: sku_id
+    productAttr:
+      column: attribute_key,attribute_value
+      processor: flattened
+  #  etlCondition: "where a.c_time>='{0}'"
+  commitBatch: 3000
+#flattened 类型, 删除其中一个对象会导致所有对象被删除, 如果是批量删除后再新建则不会出问题.

@@ -1,0 +1,23 @@
+dataSourceKey: tyredb
+destination: example
+groupId: g3
+esMapping:
+  _index: tyredb-s_product_v1
+  _id: _id
+  main: false
+  upsert: true
+  dmlFilter: true
+  postprocessor: false
+  tableName: s_product_sku_area
+  properties:
+    _id:
+      column: sku_id
+    areaNumber:
+      processor: sqlForList
+      dataSourceKey: tyredb
+      params: sku_id
+      sql: "select area_number
+            from s_product_sku_area
+            where sku_id = ?"
+  #  etlCondition: "where a.c_time>='{0}'"
+  commitBatch: 3000
