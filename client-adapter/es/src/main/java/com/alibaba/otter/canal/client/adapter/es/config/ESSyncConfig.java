@@ -41,8 +41,8 @@ public class ESSyncConfig implements AdapterConfig {
             throw new NullPointerException("esMapping._id or esMapping.pk");
         }
 
-        if (esMapping.extensionHandler && DataHandlerFactory.getDataHandler(esMapping.configFileName) == null)
-            throw new NullPointerException("dataHandler");
+        if (esMapping.extender && DataHandlerFactory.getDataHandler(esMapping.configFileName) == null)
+            throw new NullPointerException("extender");
     }
 
     public ESMapping getEsMapping() {
@@ -77,7 +77,7 @@ public class ESSyncConfig implements AdapterConfig {
         private String tableName; //数据库表名
         private Map<String, FieldMapping> properties = new LinkedHashMap<>(); //es属性表
 
-        private boolean extensionHandler = false; //是否开启扩展的处理器
+        private boolean extender = false; //是否开启扩展的处理器
 
         private UpdateByQueryMapping updateByQuery;  //查询更新配置
 

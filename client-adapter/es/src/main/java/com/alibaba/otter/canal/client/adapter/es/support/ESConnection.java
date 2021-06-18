@@ -9,6 +9,7 @@ import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
@@ -50,6 +51,7 @@ public class ESConnection {
     private static final Logger logger = LoggerFactory.getLogger(ESConnection.class);
 
     private static RestHighLevelClient restHighLevelClient;
+
 
     public ESConnection(String[] hosts, Map<String, String> properties) throws UnknownHostException {
         HttpHost[] httpHosts = new HttpHost[hosts.length];
@@ -177,6 +179,7 @@ public class ESConnection {
         @Override
         public void processFailBulkResponse(BulkRequest bulkRequest, String errorMsg) {
             BulkItemResponse[] items = bulkResponse.getItems();
+            BulkRequest errorLogRequest = new BulkRequest();
             for (int i = 0; i < items.length; i++) {
                 BulkItemResponse itemResponse = items[i];
                 if (!itemResponse.isFailed()) {
@@ -194,8 +197,17 @@ public class ESConnection {
                 IndexRequest indexRequest = new IndexRequest();
                 indexRequest.index("canal-adapter_es_error_"+LocalDateTime.now().toString("yyyy-MM-dd"));
                 indexRequest.source(GsonUtil.gson.toJson(map), XContentType.JSON);
-                restHighLevelClient.index(indexRequest, RequestOptions.DEFAULT);
+                errorLogRequest.add(indexRequest);
             }
+            restHighLevelClient.bulkAsync(errorLogRequest, RequestOptions.DEFAULT, new ActionListener<BulkResponse>() {
+                @Override
+                public void onResponse(BulkResponse bulkItemResponses) {
+                }
+                @Override
+                public void onFailure(Exception e) {
+                }
+            });
+
         }
     }
 }

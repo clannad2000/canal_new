@@ -212,4 +212,14 @@ public class ESSyncService {
     public void commit() {
         esTemplate.commit();
     }
+
+
+    //POST _scripts/flattened-remove
+    //{
+    //  "script": {
+    //    "lang": "painless",
+    //    "source": "ctx._source.get(params.field).remove(params.subField)"
+    //  }
+    //}
+
 }

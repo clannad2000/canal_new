@@ -2,12 +2,12 @@ dataSourceKey: tyredb
 destination: example
 groupId: g3
 esMapping:
-  _index: tyredb-s_product_v1
+  _index: tyredb-s_product
   _id: _id
   main: false
   upsert: true
   dmlFilter: true
-  postprocessor: false
+  extender: false
   tableName: s_product_sku_area
   properties:
     _id:

@@ -2,7 +2,7 @@ dataSourceKey: tyredb
 destination: example
 groupId: g3
 esMapping:
-  _index: tyredb-s_product_v1
+  _index: tyredb-s_product
   _id: _id
   tableName: s_company
   updateByQuery:

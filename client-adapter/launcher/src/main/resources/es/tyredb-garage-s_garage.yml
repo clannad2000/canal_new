@@ -1,13 +1,14 @@
 dataSourceKey: tyredb
 destination: example
-groupId: g3
+groupId: g2
 esMapping:
-  _index: tyredb-s_garage_v1
+  _index: tyredb-s_garage
   _type: _doc
   _id: _id
   main: true
   upsert: true
   tableName: s_garage
+  indexPartition: yyyy-MM-dd
   properties:
     _id:
       column: garage_id

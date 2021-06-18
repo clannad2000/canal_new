@@ -5,9 +5,11 @@ import com.alibaba.otter.canal.client.adapter.es.support.emun.OpTypeEnum;
 import com.alibaba.otter.canal.client.adapter.es.support.model.ESRequest;
 import com.alibaba.otter.canal.client.adapter.es.support.model.UpdateByQueryInfo;
 import lombok.SneakyThrows;
+import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -63,14 +65,14 @@ public class ES7xTemplate implements ESTemplate {
     @Override
     public void update(ESSyncConfig.ESMapping mapping, Object pkVal, Map<String, Object> esFieldData, OpTypeEnum opTypeEnum) {
 
-            //是否查询更新操作
-            if (mapping.getUpdateByQuery() != null) {
-                updateByQueryForES(mapping, esFieldData);
-                return;
-            }
+        //是否查询更新操作
+        if (mapping.getUpdateByQuery() != null) {
+            updateByQueryForES(mapping, esFieldData);
+            return;
+        }
 
-            //List<String> ids = getIds(mapping, pkVal);
-            update(mapping.get_index(), mapping.isUpsert(), pkVal.toString(), esFieldData, mapping.getConfigFileName(), opTypeEnum);
+        //List<String> ids = getIds(mapping, pkVal);
+        update(mapping.get_index(), mapping.isUpsert(), pkVal.toString(), esFieldData, mapping.getConfigFileName(), opTypeEnum);
     }
 
     /**
@@ -108,8 +110,34 @@ public class ES7xTemplate implements ESTemplate {
         updateByQueryRequest.setQuery(updateByQueryInfo.getQuery());
 
         BulkByScrollResponse scrollResponse = esConnection.getRestHighLevelClient().updateByQuery(updateByQueryRequest, RequestOptions.DEFAULT);
+
+
         List<BulkItemResponse.Failure> bulkFailures = scrollResponse.getBulkFailures();
         if (!bulkFailures.isEmpty()) {
+            BulkRequest errorLogRequest = new BulkRequest();
+            for (BulkItemResponse.Failure bulkFailure : bulkFailures) {
+                Map<String, Object> map = new HashMap<>();
+                map.put("statusName", bulkFailure.getStatus().name());
+                map.put("status", bulkFailure.getStatus().getStatus());
+                map.put("failureMessage", bulkFailure.getCause());
+                map.put("request", updateByQueryRequest);
+                map.put("createTime", System.currentTimeMillis());
+                map.put("createDate", LocalDateTime.now().toString("yyyy-MM-dd HH:mm:ss"));
+                IndexRequest indexRequest = new IndexRequest();
+                indexRequest.index("canal-adapter_es_error_" + LocalDateTime.now().toString("yyyy-MM-dd"));
+                indexRequest.source(GsonUtil.gson.toJson(map), XContentType.JSON);
+                errorLogRequest.add(indexRequest);
+            }
+
+            esConnection.getRestHighLevelClient().bulkAsync(errorLogRequest, RequestOptions.DEFAULT, new ActionListener<BulkResponse>() {
+                @Override
+                public void onResponse(BulkResponse bulkItemResponses) {
+                }
+                @Override
+                public void onFailure(Exception e) {
+                }
+            });
+
             throw new RuntimeException("ES update by query sync commit error: " + bulkFailures);
         }
     }
@@ -157,13 +185,13 @@ public class ES7xTemplate implements ESTemplate {
             BulkRequest bulkRequest = esBulkRequest.getBulkRequest();
             ESBulkRequest.ESBulkResponse response = esBulkRequest.bulk();
 
-            Map<String, Object> map = new HashMap<>();
-            map.put("createTime", System.currentTimeMillis());
-            map.put("createDate", LocalDateTime.now().toString("yyyy-MM-dd HH:mm:ss"));
-            map.put("requests", esBulkRequest.getRequests());
-            String json = GsonUtil.gson.toJson(map);
-            IndexRequest indexRequest = new IndexRequest().index("canal-adapter_es_requests_"+LocalDateTime.now().toString("yyyy-MM-dd")).source(json, XContentType.JSON);
-            esConnection.getRestHighLevelClient().index(indexRequest, RequestOptions.DEFAULT);
+//            Map<String, Object> map = new HashMap<>();
+//            map.put("createTime", System.currentTimeMillis());
+//            map.put("createDate", LocalDateTime.now().toString("yyyy-MM-dd HH:mm:ss"));
+//            map.put("requests", esBulkRequest.getRequests());
+//            String json = GsonUtil.gson.toJson(map);
+//            IndexRequest indexRequest = new IndexRequest().index("canal-adapter_es_requests_"+LocalDateTime.now().toString("yyyy-MM-dd")).source(json, XContentType.JSON);
+//            esConnection.getRestHighLevelClient().index(indexRequest, RequestOptions.DEFAULT);
 
             try {
                 if (response.hasFailures()) {
