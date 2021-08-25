@@ -3,8 +3,8 @@ package com.alibaba.otter.canal.client.adapter.es.support.transform.data;
 
 import com.alibaba.otter.canal.client.adapter.es.config.ESSyncConfig;
 import com.alibaba.otter.canal.client.adapter.es.support.ESSyncUtil;
-import com.alibaba.otter.canal.client.adapter.es.support.emun.OpTypeEnum;
-import lombok.SneakyThrows;
+import com.alibaba.otter.canal.client.adapter.support.OpTypeEnum;
+import com.alibaba.otter.canal.client.adapter.es.support.model.ESData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,17 +50,17 @@ public abstract class AbstractDataHandler implements DataHandler {
      */
     @Override
     public Map<String, Object> fieldMapping(Map<String, Object> sourceData, ESSyncConfig.ESMapping mapping, OpTypeEnum opTypeEnum) {
-        Map<String, Object> esFieldData = new LinkedHashMap<>();
-        try {
-            mapping.getProperties().forEach((esFieldName, fieldMapping) -> {
-                Object value = ESSyncUtil.dataMapping(sourceData, fieldMapping, esFieldName, opTypeEnum);
-                esFieldData.put(esFieldName, value);
-            });
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        }
-        return esFieldData;
+            Map<String, Object> esFieldData = new LinkedHashMap<>();
+            try {
+                mapping.getProperties().forEach((esFieldName, fieldMapping) -> {
+                    Object value = ESSyncUtil.dataMapping(sourceData, fieldMapping, esFieldName, opTypeEnum);
+                    esFieldData.put(esFieldName, value);
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw e;
+            }
+            return esFieldData;
     }
 
 
@@ -76,8 +76,14 @@ public abstract class AbstractDataHandler implements DataHandler {
      * @date 2021/6/11 11:03
      */
     @Override
-    public Map<String, Object> postDispose(ESSyncConfig esSyncConfig, Map<String, Object> sourceData, Map<String, Object> esFieldData, OpTypeEnum opTypeEnum) {
-        return esFieldData;
+    public ESData postDispose(ESSyncConfig esSyncConfig, Map<String, Object> sourceData, Map<String, Object> esFieldData, OpTypeEnum opTypeEnum) {
+        ESSyncConfig.ESMapping esMapping = esSyncConfig.getEsMapping();
+        return ESData.builder()
+                .srcOpType(opTypeEnum)
+                .index(esMapping.get_index())
+                .esFieldData(esFieldData)
+                .upsert(esSyncConfig.getEsMapping().isUpsert())
+                .build();
     }
 
 
@@ -92,9 +98,10 @@ public abstract class AbstractDataHandler implements DataHandler {
      * @date 2021/6/11 11:03
      */
     @Override
-    public Map<String, Object> dispose(ESSyncConfig esSyncConfig, Map<String, Object> sourceData, OpTypeEnum opTypeEnum) {
+    public ESData dispose(ESSyncConfig esSyncConfig, Map<String, Object> sourceData, OpTypeEnum opTypeEnum) {
         ESSyncConfig.ESMapping mapping = esSyncConfig.getEsMapping();
         try {
+
             //前置处理
             preDispose(sourceData, mapping, opTypeEnum);
 

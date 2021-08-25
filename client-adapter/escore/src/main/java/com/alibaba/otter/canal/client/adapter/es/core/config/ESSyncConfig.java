@@ -1,5 +1,7 @@
 package com.alibaba.otter.canal.client.adapter.es.core.config;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -114,8 +116,21 @@ public class ESSyncConfig implements AdapterConfig {
 
         private SchemaItem                   schemaItem;                             // sql解析结果模型
 
-        public String get_index() {
+        private String                       indexPartition;                         //索引分区 例: yyyy-MM-dd
+
+        private DateTimeFormatter            dateTimeFormatter;
+
+        public void setIndexPartition(String indexPartition) {
+            this.indexPartition = indexPartition;
+            dateTimeFormatter= DateTimeFormatter.ofPattern(indexPartition);
+        }
+
+        public String getOriginalIndex() {
             return _index;
+        }
+
+        public String get_index() {
+            return _index+"_"+LocalDateTime.now().format(dateTimeFormatter);
         }
 
         public void set_index(String _index) {

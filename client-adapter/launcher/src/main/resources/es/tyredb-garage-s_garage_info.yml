@@ -4,13 +4,13 @@ groupId: g2
 esMapping:
   _index: tyredb-s_garage
   _type: _doc
-  _id: _id
+  _id: garageId
   main: false
   upsert: true
   tableName: s_garage_info
   extender: true
   properties:
-    _id:
+    garageId:
       column: garage_id
     topImage:
       column: top_image

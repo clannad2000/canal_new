@@ -390,13 +390,14 @@ public class ES6xTemplate implements ESTemplate {
      */
     @SuppressWarnings("unchecked")
     private String getEsType(ESMapping mapping, String fieldName) {
-        String key = mapping.get_index() + "-" + mapping.get_type();
+        String key = mapping.getOriginalIndex() + "-" + mapping.get_type();
         Map<String, String> fieldType = esFieldTypes.get(key);
         if (fieldType == null || fieldType.get(fieldName) == null) {
-            MappingMetaData mappingMetaData = esConnection.getMapping(mapping.get_index(), mapping.get_type());
+            MappingMetaData mappingMetaData = esConnection.getMapping(mapping.getOriginalIndex(), mapping.get_type());
 
             if (mappingMetaData == null) {
-                throw new IllegalArgumentException("Not found the mapping info of index: " + mapping.get_index());
+                logger.error("Not found the mapping info of index: " + mapping.getOriginalIndex());
+                return "";
             }
 
             fieldType = new LinkedHashMap<>();
@@ -414,7 +415,7 @@ public class ES6xTemplate implements ESTemplate {
             esFieldTypes.put(key, fieldType);
 
         }
-        return fieldType.get(fieldName);
+        return fieldType.get(fieldName)!=null?fieldType.get(fieldName):"";
     }
 
     private void putRelationDataFromRS(ESMapping mapping, SchemaItem schemaItem, ResultSet resultSet,

@@ -22,9 +22,10 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
-import com.alibaba.otter.canal.client.adapter.es.support.emun.OpTypeEnum;
+import com.alibaba.otter.canal.client.adapter.support.OpTypeEnum;
 import com.alibaba.otter.canal.client.adapter.es.support.transform.field.FieldMappingHandlerFactory;
 import com.alibaba.otter.canal.client.adapter.es.config.ESSyncConfig;
+import com.alibaba.otter.canal.client.adapter.support.Dml;
 import com.google.common.base.Splitter;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
@@ -335,6 +336,12 @@ public class ESSyncUtil {
     }
 
 
+    public static List<Integer> strToIntList(Object s) {
+        if (s == null) return new ArrayList<>();
+        return strToIntList(s.toString(), ",");
+    }
+
+
     public static List<Integer> strToIntList(String s) {
         return strToIntList(s, ",");
     }
@@ -371,6 +378,18 @@ public class ESSyncUtil {
         return strToList(object.toString());
     }
 
+
+    public static Map<String, Object> findDmlDate(List<Dml> dmls, int index, String table, String fieldName, Object fieldVal) {
+        for (int i = index; i < dmls.size(); i++) {
+            if (dmls.get(i).getTable().equalsIgnoreCase(table)) {
+                for (Map<String, Object> datum : dmls.get(i).getData()) {
+                    Object obj = datum.get(fieldName);
+                    if (obj != null && obj.toString().equalsIgnoreCase(fieldVal.toString())) return datum;
+                }
+            }
+        }
+        return null;
+    }
 
 
     public static Set<Class<?>> getClasses(String pack) {

@@ -1,10 +1,7 @@
 package com.alibaba.otter.canal.client.adapter.es.support.transform.field;
 
 import com.alibaba.otter.canal.client.adapter.es.config.ESSyncConfig;
-import com.alibaba.otter.canal.client.adapter.es.support.emun.OpTypeEnum;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.jdbc.core.JdbcTemplate;
+import com.alibaba.otter.canal.client.adapter.support.OpTypeEnum;
 
 import java.util.Map;
 

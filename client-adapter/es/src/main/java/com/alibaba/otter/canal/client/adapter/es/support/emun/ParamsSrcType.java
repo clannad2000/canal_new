@@ -1,17 +1,20 @@
 package com.alibaba.otter.canal.client.adapter.es.support.emun;
 
 /**
- * @Description
+ * @Description 数据类型枚举
  * @Author 黄念
- * @Date 2021/2/1
+ * @Date 2021/5/11
  * @Version1.0
  */
-public enum OpTypeEnum {
-    INSERT("insert"), UPDATE("update"), DELETE("delete");
+public enum ParamsSrcType {
+
+    DOC("doc"),
+    PARAMS("params");
 
     public String value;
 
-    OpTypeEnum(String value) {
+    ParamsSrcType(String value) {
         this.value = value;
     }
+
 }

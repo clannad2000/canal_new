@@ -2,15 +2,13 @@ dataSourceKey: tyredb
 destination: example
 groupId: g3
 esMapping:
-  _index: tyredb-s_product
-  _id: _id
+  _index: tyredb-s_product_test
+  _id: spuId
   tableName: s_product
   updateByQuery:
     scriptId: tyre-sku-s_product_sku
     pk: spuId
   properties:
-    _id:
-      column: id
     spuId:
       column: id
     brandId:

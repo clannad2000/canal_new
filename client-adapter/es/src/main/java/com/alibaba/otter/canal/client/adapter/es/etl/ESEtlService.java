@@ -8,18 +8,23 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.sql.DataSource;
 
+import com.alibaba.otter.canal.client.adapter.es.service.ESSyncServiceFactory;
+import com.alibaba.otter.canal.client.adapter.es.service.EtlESSyncService;
 import com.alibaba.otter.canal.client.adapter.es.support.ES7xTemplate;
 import com.alibaba.otter.canal.client.adapter.es.support.ESBulkRequest;
 import com.alibaba.otter.canal.client.adapter.es.support.ESConnection;
 
 import com.alibaba.otter.canal.client.adapter.es.config.ESSyncConfig;
 import com.alibaba.otter.canal.client.adapter.es.support.ESTemplate;
-import com.alibaba.otter.canal.client.adapter.es.support.emun.OpTypeEnum;
+import com.alibaba.otter.canal.client.adapter.es.support.load.Loader;
+import com.alibaba.otter.canal.client.adapter.es.support.model.ExtractorContext;
 import com.alibaba.otter.canal.client.adapter.es.support.transform.data.DataHandler;
 import com.alibaba.otter.canal.client.adapter.es.support.transform.data.DataHandlerFactory;
 import com.alibaba.otter.canal.client.adapter.support.AbstractEtlService;
 import com.alibaba.otter.canal.client.adapter.support.AdapterConfig;
 import com.alibaba.otter.canal.client.adapter.support.EtlResult;
+import com.alibaba.otter.canal.client.adapter.support.FlatDml;
+import com.alibaba.otter.canal.client.adapter.support.OpTypeEnum;
 import com.alibaba.otter.canal.client.adapter.support.Util;
 
 /**
@@ -33,12 +38,14 @@ public class ESEtlService extends AbstractEtlService {
     private ESConnection esConnection;
     private ESTemplate esTemplate;
     private ESSyncConfig config;
+    private Loader loader;
 
-    public ESEtlService(ESConnection esConnection, ESSyncConfig config) {
+    public ESEtlService(ESConnection esConnection, ESSyncConfig config, Loader loader) {
         super("ES", config);
         this.esConnection = esConnection;
         this.esTemplate = new ES7xTemplate(esConnection);
         this.config = config;
+        this.loader = loader;
     }
 
     public EtlResult importData(List<String> params) {
@@ -69,12 +76,17 @@ public class ESEtlService extends AbstractEtlService {
 
                         DataHandler dataHandler = DataHandlerFactory.getDataHandler(mapping.getConfigFileName());
 
-                        Map<String, Object> esFieldData = dataHandler.dispose(config, sourceData, OpTypeEnum.INSERT);
+                        //ESData esData = dataHandler.dispose(config, sourceData, OpTypeEnum.INSERT);
 
                         //取得主键值
-                        Object idVal = esFieldData.remove(mapping.get_id());
+                        //Object idVal = esFieldData.remove(mapping.get_id());
 
-                        esTemplate.update(mapping, idVal, esFieldData, OpTypeEnum.INSERT);
+                        //esTemplate.update(mapping, idVal, esFieldData, OpTypeEnum.INSERT);
+                        //loader.load(mapping, esData);
+                        ESSyncServiceFactory.getInstant(EtlESSyncService.class).sync(ExtractorContext.builder()
+                                .config(config)
+                                .flatDml(FlatDml.builder().table(config.getEsMapping().getTableName()).type(OpTypeEnum.INSERT).data(sourceData).build())
+                                .build());
                         count++;
                         impCount.incrementAndGet();
                     }

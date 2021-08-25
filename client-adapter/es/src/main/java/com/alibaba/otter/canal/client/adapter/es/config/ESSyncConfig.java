@@ -18,17 +18,19 @@ import lombok.Data;
 @Data
 public class ESSyncConfig implements AdapterConfig {
 
-    private String dataSourceKey;    // 数据源key
+    private String      dataSourceKey;    // 数据源key
 
-    private String outerAdapterKey;  // adapter key
+    private String      outerAdapterKey;  // adapter key
 
-    private String groupId;          // group id
+    private String      groupId;          // group id
 
-    private String destination;      // canal destination
+    private String      destination;      // canal destination
 
-    private ESMapping esMapping;
+    private ESMapping   esMapping;
 
-    private String esVersion = "es";
+    private String      esVersion = "es";
+
+    private Boolean     updateMode = false;
 
     public void validate() {
         if (esMapping._index == null) {
@@ -57,33 +59,40 @@ public class ESSyncConfig implements AdapterConfig {
     @Data
     public static class ESMapping implements AdapterMapping {
 
-        private String _index;
-        private String _type;
-        private String _id;
-        private boolean upsert = false;
+        private String                      _index;
+        private String                      _type;
+        private String                      _id;
+        private boolean                     upsert = false;
         private Map<String, RelationMapping> relations = new LinkedHashMap<>();
-        private String sql;
+        private String                      sql;
         // 对象字段, 例: objFields:
         // - _labels: array:;
-        private Map<String, String> objFields = new LinkedHashMap<>();
-        private List<String> skips = new ArrayList<>();
-        private int commitBatch = 1000;
-        private String etlCondition;
-        private boolean syncByTimestamp = false;                // 是否按时间戳定时同步
-        private Long syncInterval;                           // 同步时间间隔
+        private Map<String, String>         objFields = new LinkedHashMap<>();
+        private List<String>                skips = new ArrayList<>();
+        private int                         commitBatch = 1000;
+        private String                      etlCondition;
+        private boolean                     syncByTimestamp = false;                // 是否按时间戳定时同步
+        private Long                        syncInterval;                           // 同步时间间隔
 
-        private boolean main; //是否是主表
-        private boolean idMode; //主键: true: id模式, false: pk
-        private String tableName; //数据库表名
-        private Map<String, FieldMapping> properties = new LinkedHashMap<>(); //es属性表
+        private boolean                     main; //是否是主表
+        private boolean                     idMode; //主键: true: id模式, false: pk
+        private String                      tableName; //数据库表名
+        private Map<String, FieldMapping>   properties = new LinkedHashMap<>(); //es属性表
 
-        private boolean extender = false; //是否开启扩展的处理器
+        private boolean                     extender = false; //是否开启扩展的处理器
 
-        private UpdateByQueryMapping updateByQuery;  //查询更新配置
+        private String                      configFileName;  //配置文件名
 
-        private String configFileName;  //配置文件名
+        private boolean                     dmlFilter = false;
 
-        private boolean dmlFilter = false;
+        private Script updateByQuery;  //查询更新配置脚本
+
+        private Script scriptedUpdate;  //更新脚本
+
+        private Map<String,FieldMapping>    preProcessor;
+
+        private Map<String,FieldMapping>    postProcessor;
+
 
         public void set_id(String _id) {
             this._id = _id;
@@ -109,7 +118,7 @@ public class ESSyncConfig implements AdapterConfig {
 
 
         @Data
-        public static class UpdateByQueryMapping {
+        public static class Script {
             private String pk;       //主键
             private String scriptId; //es脚本id
         }

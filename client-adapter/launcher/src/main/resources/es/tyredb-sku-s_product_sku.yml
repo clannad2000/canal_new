@@ -2,15 +2,13 @@ dataSourceKey: tyredb
 destination: example
 groupId: g3
 esMapping:
-  _index: tyredb-s_product
-  _id: _id
+  _index: tyredb-s_product_test
+  _id: skuId
   main: true
   upsert: true
   tableName: s_product_sku
-  extender: true
+  #extender: true
   properties:
-    _id:
-      column: id
     skuId:
       column: id
     images:
@@ -20,7 +18,7 @@ esMapping:
       column: del_status
       processor: boolean
     avgLevel:
-      column: avgLevel
+      column: avg_level
     packageOriginalPrice:
       column: package_original_price
     productSellAttr:
@@ -49,5 +47,13 @@ esMapping:
       column: spu_id
     status:
       column: status
+    initHireCount:
+      column: init_hire_count
+    realHireCount:
+      column: real_hire_count
+    usedYear:
+      column: used_year
+    hireStatus:
+      column: hire_status
   #  etlCondition: "where a.c_time>='{0}'"
   commitBatch: 3000

@@ -1,12 +1,10 @@
 package com.alibaba.otter.canal.client.adapter.es.support;
 
 import com.alibaba.otter.canal.client.adapter.es.config.ESSyncConfig;
-import com.alibaba.otter.canal.client.adapter.es.support.emun.OpTypeEnum;
-import com.alibaba.otter.canal.client.adapter.es.support.model.ESRequest;
-import com.alibaba.otter.canal.client.adapter.es.support.model.UpdateByQueryInfo;
+import com.alibaba.otter.canal.client.adapter.es.support.emun.ParamsSrcType;
+import com.alibaba.otter.canal.client.adapter.es.support.model.ESData;
 import lombok.SneakyThrows;
 import org.elasticsearch.action.ActionListener;
-import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -46,8 +44,6 @@ public class ES7xTemplate implements ESTemplate {
 
     private ESBulkRequest esBulkRequest;
 
-    // private List<Object> requests = new ArrayList<>();
-
     public ESBulkRequest getBulk() {
         return esBulkRequest;
     }
@@ -63,16 +59,18 @@ public class ES7xTemplate implements ESTemplate {
 
 
     @Override
-    public void update(ESSyncConfig.ESMapping mapping, Object pkVal, Map<String, Object> esFieldData, OpTypeEnum opTypeEnum) {
-
-        //是否查询更新操作
-        if (mapping.getUpdateByQuery() != null) {
-            updateByQueryForES(mapping, esFieldData);
-            return;
+    public void update(ESData esData) {
+        try {
+            UpdateRequest updateRequest = new UpdateRequest(esData.getIndex(), esData.getIdVal()).doc(esData.getEsFieldData()).docAsUpsert(esData.isUpsert());
+            getBulk().add(updateRequest);
+            //getBulk().addReqObj(ESRequest.builder().index(esIndex).id(id).source(esFieldData).upsert(upsert).esOpType(DocWriteRequest.OpType.UPDATE.name()).configFileName(configFileName).srcOpType(opTypeEnum.name()).createTime(System.currentTimeMillis()).createDate(LocalDateTime.now().toString("yyyy-MM-dd HH:mm:ss")).build());
+            commitBulk();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
         }
 
         //List<String> ids = getIds(mapping, pkVal);
-        update(mapping.get_index(), mapping.isUpsert(), pkVal.toString(), esFieldData, mapping.getConfigFileName(), opTypeEnum);
     }
 
     /**
@@ -97,21 +95,19 @@ public class ES7xTemplate implements ESTemplate {
      */
     @SneakyThrows
     @Override
-    public void updateByQueryForES(ESSyncConfig.ESMapping mapping, Map<String, Object> esFieldData) {
+    public void updateByQuery(ESData esData) {
+        UpdateByQueryRequest updateByQueryRequest = new UpdateByQueryRequest(esData.getIndex());
+        Script script = new Script(ScriptType.STORED, null, esData.getScript(), esData.getParamsSrc() == ParamsSrcType.PARAMS ? esData.getParams() : esData.getEsFieldData());
 
-        UpdateByQueryInfo updateByQueryInfo = UpdateByQueryInfo.builder()
-                .query(QueryBuilders.termsQuery(mapping.getUpdateByQuery().getPk(), esFieldData.get(mapping.getUpdateByQuery().getPk())))
-                .scriptId(mapping.getUpdateByQuery().getScriptId())
-                .build();
-
-        UpdateByQueryRequest updateByQueryRequest = new UpdateByQueryRequest(mapping.get_index());
-        Script script = new Script(ScriptType.STORED, null, updateByQueryInfo.getScriptId(), esFieldData);
         updateByQueryRequest.setScript(script);
-        updateByQueryRequest.setQuery(updateByQueryInfo.getQuery());
+        updateByQueryRequest.setQuery(esData.getQuery());
 
         BulkByScrollResponse scrollResponse = esConnection.getRestHighLevelClient().updateByQuery(updateByQueryRequest, RequestOptions.DEFAULT);
+        saveErrorLog(scrollResponse, updateByQueryRequest);
+    }
 
 
+    private void saveErrorLog(BulkByScrollResponse scrollResponse, UpdateByQueryRequest updateByQueryRequest) {
         List<BulkItemResponse.Failure> bulkFailures = scrollResponse.getBulkFailures();
         if (!bulkFailures.isEmpty()) {
             BulkRequest errorLogRequest = new BulkRequest();
@@ -133,6 +129,7 @@ public class ES7xTemplate implements ESTemplate {
                 @Override
                 public void onResponse(BulkResponse bulkItemResponses) {
                 }
+
                 @Override
                 public void onFailure(Exception e) {
                 }
@@ -150,27 +147,16 @@ public class ES7xTemplate implements ESTemplate {
      * @param idVal   主键值
      */
     @Override
-    public void delete(ESSyncConfig.ESMapping mapping, String idVal, Map<String, Object> esFieldData, OpTypeEnum opTypeEnum) {
-        //List<String> ids = getIds(mapping, idVal);
-
-        //判断是否是主表
-        //如果是主表则直接删除文档
-        if (mapping.isMain()) {
-            delete(mapping.get_index(), idVal, mapping.getConfigFileName(), opTypeEnum);
-            return;
+    public void delete(ESData esData) {
+        try {
+            DeleteRequest deleteRequest = new DeleteRequest(esData.getIndex(), esData.getIdVal());
+            getBulk().add(deleteRequest);
+            //getBulk().addReqObj(ESRequest.builder().index(esIndex).id(id).esOpType(DocWriteRequest.OpType.DELETE.name()).configFileName(configFileName).srcOpType(opTypeEnum.name()).createTime(System.currentTimeMillis()).createDate(LocalDateTime.now().toString("yyyy-MM-dd HH:mm:ss")).build());
+            commitBulk();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
         }
-
-        //是否查询更新操作
-        //因为有查询更新,原pk模式更新已经不需要
-        if (mapping.getUpdateByQuery() != null) {
-            updateByQueryForES(mapping, Collections.singletonMap(mapping.get_id(), idVal));
-            return;
-        }
-
-        //从表则更新除id字段的其他所有字段为null.
-        mapping.getProperties().keySet().forEach(key -> esFieldData.put(key, null));
-        esFieldData.remove(mapping.get_id());
-        update(mapping.get_index(), false, idVal, esFieldData, mapping.getConfigFileName(), opTypeEnum);
     }
 
 
@@ -229,39 +215,28 @@ public class ES7xTemplate implements ESTemplate {
     }
 
 
-    //删除
-    private void delete(String esIndex, String id, String configFileName, OpTypeEnum opTypeEnum) {
-        try {
-            DeleteRequest deleteRequest = new DeleteRequest(esIndex, id);
-            getBulk().add(deleteRequest);
-            getBulk().addReqObj(ESRequest.builder().index(esIndex).id(id).esOpType(DocWriteRequest.OpType.DELETE.name()).configFileName(configFileName).srcOpType(opTypeEnum.name()).createTime(System.currentTimeMillis()).createDate(LocalDateTime.now().toString("yyyy-MM-dd HH:mm:ss")).build());
-            commitBulk();
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        }
-    }
+//    //删除
+//    private void delete(String esIndex, String id, OpTypeEnum opTypeEnum) {
+//        try {
+//            DeleteRequest deleteRequest = new DeleteRequest(esIndex, id);
+//            getBulk().add(deleteRequest);
+//            //getBulk().addReqObj(ESRequest.builder().index(esIndex).id(id).esOpType(DocWriteRequest.OpType.DELETE.name()).configFileName(configFileName).srcOpType(opTypeEnum.name()).createTime(System.currentTimeMillis()).createDate(LocalDateTime.now().toString("yyyy-MM-dd HH:mm:ss")).build());
+//            commitBulk();
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            throw e;
+//        }
+//    }
 
-    //更新
-    private void update(String esIndex, boolean upsert, String id, Map<String, Object> esFieldData, String configFileName, OpTypeEnum opTypeEnum) {
-        try {
-            UpdateRequest updateRequest = new UpdateRequest(esIndex, id).doc(esFieldData).docAsUpsert(upsert);
-            getBulk().add(updateRequest);
-            getBulk().addReqObj(ESRequest.builder().index(esIndex).id(id).source(esFieldData).upsert(upsert).esOpType(DocWriteRequest.OpType.UPDATE.name()).configFileName(configFileName).srcOpType(opTypeEnum.name()).createTime(System.currentTimeMillis()).createDate(LocalDateTime.now().toString("yyyy-MM-dd HH:mm:ss")).build());
-            commitBulk();
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        }
-    }
 
     //脚本更新
     @Override
-    public void scriptUpdate(ESSyncConfig.ESMapping mapping, String pkVal, Script script, OpTypeEnum opTypeEnum) {
+    public void scriptUpdate(ESData esData) {
         try {
-            UpdateRequest updateRequest = new UpdateRequest(mapping.get_index(), pkVal).script(script);
+            Script script = new Script(ScriptType.STORED, null, esData.getScript(), esData.getParamsSrc() == ParamsSrcType.PARAMS ? esData.getParams() : esData.getEsFieldData());
+            UpdateRequest updateRequest = new UpdateRequest(esData.getIndex(), esData.getIdVal()).script(script);
             getBulk().add(updateRequest);
-            getBulk().addReqObj(ESRequest.builder().index(mapping.get_index()).id(pkVal).script(script).esOpType(DocWriteRequest.OpType.UPDATE.name()).configFileName(mapping.getConfigFileName()).srcOpType(opTypeEnum.name()).createTime(System.currentTimeMillis()).createDate(LocalDateTime.now().toString("yyyy-MM-dd HH:mm:ss")).build());
+            //getBulk().addReqObj(ESRequest.builder().index(mapping.get_index()).id(pkVal).script(script).esOpType(DocWriteRequest.OpType.UPDATE.name()).configFileName(mapping.getConfigFileName()).srcOpType(opTypeEnum.name()).createTime(System.currentTimeMillis()).createDate(LocalDateTime.now().toString("yyyy-MM-dd HH:mm:ss")).build());
             commitBulk();
         } catch (Exception e) {
             e.printStackTrace();

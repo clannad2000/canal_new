@@ -4,14 +4,11 @@ groupId: g2
 esMapping:
   _index: tyredb-s_garage
   _type: _doc
-  _id: _id
+  _id: garageId
   main: true
   upsert: true
   tableName: s_garage
-  indexPartition: yyyy-MM-dd
   properties:
-    _id:
-      column: garage_id
     garageId:
       column: garage_id
     tel:

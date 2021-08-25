@@ -1,7 +1,8 @@
 package com.alibaba.otter.canal.client.adapter.es.support.transform.data;
 
 import com.alibaba.otter.canal.client.adapter.es.config.ESSyncConfig;
-import com.alibaba.otter.canal.client.adapter.es.support.emun.OpTypeEnum;
+import com.alibaba.otter.canal.client.adapter.support.OpTypeEnum;
+import com.alibaba.otter.canal.client.adapter.es.support.model.ESData;
 
 import java.util.Map;
 
@@ -45,7 +46,7 @@ public interface DataHandler {
      * @author 黄念
      * @date 2021/6/11 11:03
      */
-    Map<String, Object> postDispose(ESSyncConfig esSyncConfig, Map<String, Object> sourceData, Map<String, Object> esFieldData, OpTypeEnum opTypeEnum);
+    ESData postDispose(ESSyncConfig esSyncConfig, Map<String, Object> sourceData, Map<String, Object> esFieldData, OpTypeEnum opTypeEnum);
 
 
     /** 数据处理
@@ -56,5 +57,5 @@ public interface DataHandler {
      * @author 黄念
      * @date 2021/6/11 11:03
      */
-    Map<String, Object> dispose(ESSyncConfig esSyncConfig, Map<String, Object> sourceData, OpTypeEnum opTypeEnum);
+    ESData dispose(ESSyncConfig esSyncConfig, Map<String, Object> sourceData, OpTypeEnum opTypeEnum);
 }

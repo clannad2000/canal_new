@@ -3,7 +3,7 @@ package com.alibaba.otter.canal.client.adapter.es.support.transform.field.impl;
 
 import com.alibaba.otter.canal.client.adapter.es.config.ESSyncConfig;
 import com.alibaba.otter.canal.client.adapter.es.support.ESSyncUtil;
-import com.alibaba.otter.canal.client.adapter.es.support.emun.OpTypeEnum;
+import com.alibaba.otter.canal.client.adapter.support.OpTypeEnum;
 import com.alibaba.otter.canal.client.adapter.es.support.transform.field.FieldMappingHandler;
 import com.alibaba.otter.canal.client.adapter.support.SqlUtil;
 

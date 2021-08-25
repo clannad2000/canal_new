@@ -242,7 +242,7 @@ public class ESSyncUtil {
                 break;
             default:
                 // 其他类全以字符串处理
-                res = val.toString();
+                res = val;
                 break;
         }
 

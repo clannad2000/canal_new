@@ -21,6 +21,7 @@ public class FieldMappingHandlerFactory {
         map.put("HHmmDate", new HHmmDateHandler());
         map.put("flattened", new FlattenedHandler());
         map.put("sqlForList", new SqlForListHandler());
+        map.put("sqlForMap", new SqlForMapHandler());
         map.put("sqlForMapList", new SqlForMapListHandler());
         map.put("sqlForObject", new SqlForObjectHandler());
     }

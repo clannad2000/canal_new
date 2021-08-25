@@ -55,6 +55,7 @@ public class CanalAdapterLoader {
                 for (OuterAdapterConfig config : group.getOuterAdapters()) {
                     loadAdapter(config, canalOuterAdapters);
                 }
+
                 canalOuterAdapterGroups.add(canalOuterAdapters);
 
                 AdapterProcessor adapterProcessor = canalAdapterProcessors.computeIfAbsent(canalAdapter.getInstance()
@@ -64,6 +65,7 @@ public class CanalAdapterLoader {
                         canalAdapter.getInstance(),
                         group.getGroupId(),
                         canalOuterAdapterGroups));
+                //启动
                 adapterProcessor.start();
 
                 logger.info("Start adapter for canal-client mq topic: {} succeed", canalAdapter.getInstance() + "-"
@@ -200,10 +202,9 @@ public class CanalAdapterLoader {
 
     private void loadAdapter(OuterAdapterConfig config, List<OuterAdapter> canalOutConnectors) {
         try {
-            OuterAdapter adapter;
-            adapter = loader.getExtension(config.getName(), StringUtils.trimToEmpty(config.getKey()));
+            OuterAdapter adapter = loader.getExtension(config.getName(), StringUtils.trimToEmpty(config.getKey()));
 
-            ClassLoader cl = Thread.currentThread().getContextClassLoader();
+            ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
             // 替换ClassLoader
             Thread.currentThread().setContextClassLoader(adapter.getClass().getClassLoader());
             Environment env = (Environment) SpringContext.getBean(Environment.class);
@@ -223,7 +224,7 @@ public class CanalAdapterLoader {
                 }
             }
             adapter.init(config, evnProperties);
-            Thread.currentThread().setContextClassLoader(cl);
+            Thread.currentThread().setContextClassLoader(contextClassLoader);
             canalOutConnectors.add(adapter);
             logger.info("Load canal adapter: {} succeed", config.getName());
         } catch (Exception e) {
